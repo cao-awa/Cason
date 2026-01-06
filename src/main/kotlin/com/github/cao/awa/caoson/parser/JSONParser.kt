@@ -98,10 +98,12 @@ object JSONParser {
                         break
                     }
                 }
+
                 '}' -> {
                     next()
                     break
                 }
+
                 else -> error("Expected ',' or '}' in object")
             }
         }
@@ -111,22 +113,20 @@ object JSONParser {
     private fun CharReader.parseObjectKey(): String {
         skipWsAndComments()
         val c = peek() ?: error("Expected object key but got EOF")
-        return when (c) {
-            '\'', '"' -> parseString()
-            '+', '-', '.', in '0'..'9' -> {
-                // Numeric key literal like {1: "a"} is valid in JS object literal style.
-                parseNumber().toString()
-            }
-            else -> {
-                if (isIdStart(c)) {
-                    // In key position, allow keywords too.
-                    when (val id = parseIdentifier()) {
-                        "null", "true", "false", "Infinity", "NaN" -> id
-                        else -> id
-                    }
-                } else {
-                    error("Invalid object key start '$c'")
+        return if (c == '\'' || c == '"') {
+            parseString()
+        } else if (c == '+' || c == '-' || c == '.' || c in '0'..'9') {
+            // Numeric key literal like {1: "a"} is valid in JS object literal style.
+            parseNumber().toString()
+        } else {
+            if (isIdStart(c)) {
+                // In key position, allow keywords too.
+                when (val id = parseIdentifier()) {
+                    "null", "true", "false", "Infinity", "NaN" -> id
+                    else -> id
                 }
+            } else {
+                error("Invalid object key start '$c'")
             }
         }
     }
@@ -135,7 +135,9 @@ object JSONParser {
         expect('[')
         skipWsAndComments()
         val list = ArrayList<JSONElement>()
-        if (peek() == ']') { next(); return JSONArray(list) }
+        if (peek() == ']') {
+            next(); return JSONArray(list)
+        }
 
         while (true) {
             val v = parseElement()
@@ -146,9 +148,15 @@ object JSONParser {
                     next()
                     skipWsAndComments()
                     // trailing comma allowed
-                    if (peek() == ']') { next(); break }
+                    if (peek() == ']') {
+                        next(); break
+                    }
                 }
-                ']' -> { next(); break }
+
+                ']' -> {
+                    next(); break
+                }
+
                 else -> error("Expected ',' or ']' in array")
             }
         }
@@ -161,11 +169,11 @@ object JSONParser {
             error("Internal: parseString called at non-quote")
         }
 
-        val sb = StringBuilder()
+        val builder = StringBuilder()
         while (true) {
             val c = next() ?: error("Unterminated string")
             if (c == quote) {
-                return sb.toString()
+                return builder.toString()
             }
 
             if (c == '\\') {
@@ -177,23 +185,23 @@ object JSONParser {
                 }
                 val esc = next() ?: error("Unterminated escape")
                 when (esc) {
-                    '\\' -> sb.append('\\')
-                    '/' -> sb.append('/')
-                    '\'' -> sb.append('\'')
-                    '"' -> sb.append('"')
-                    'b' -> sb.append('\b')
-                    'f' -> sb.append('\u000C')
-                    'n' -> sb.append('\n')
-                    'r' -> sb.append('\r')
-                    't' -> sb.append('\t')
-                    'v' -> sb.append('\u000B')
+                    '\\' -> builder.append('\\')
+                    '/' -> builder.append('/')
+                    '\'' -> builder.append('\'')
+                    '"' -> builder.append('"')
+                    'b' -> builder.append('\b')
+                    'f' -> builder.append('\u000C')
+                    'n' -> builder.append('\n')
+                    'r' -> builder.append('\r')
+                    't' -> builder.append('\t')
+                    'v' -> builder.append('\u000B')
                     '0' -> {
                         // JSON5: \0 allowed if not followed by digit
                         val p = peek()
                         if (p != null && p.isDigit()) {
                             error("Invalid escape \\0 followed by digit")
                         }
-                        sb.append('\u0000')
+                        builder.append('\u0000')
                     }
                     'x' -> {
                         val h1 = next() ?: error("Invalid \\x escape")
@@ -202,8 +210,9 @@ object JSONParser {
                         if (code < 0) {
                             error("Invalid hex in \\x escape")
                         }
-                        sb.append(code.toChar())
+                        builder.append(code.toChar())
                     }
+
                     'u' -> {
                         if (peek() == '{') {
                             next() // consume {
@@ -218,9 +227,11 @@ object JSONParser {
                                 }
                                 hex.append(ch)
                             }
-                            if (hex.isEmpty()) error("Empty \\u{...} escape")
+                            if (hex.isEmpty()) {
+                                error("Empty \\u{...} escape")
+                            }
                             val cp = hex.toString().toInt(16)
-                            sb.appendCodePoint(cp)
+                            builder.appendCodePoint(cp)
                         } else {
                             val h = CharArray(4) {
                                 next() ?: error("Invalid \\u escape")
@@ -232,9 +243,10 @@ object JSONParser {
                                 }
                                 (acc shl 4) + v
                             }
-                            sb.append(code.toChar())
+                            builder.append(code.toChar())
                         }
                     }
+
                     else -> {
                         // JSON5 allows escaping of line separators? We'll treat unknown escapes as error.
                         error("Unknown escape sequence: \\$esc")
@@ -242,7 +254,7 @@ object JSONParser {
                 }
             } else {
                 if (isLineTerminator(c)) error("Unescaped line terminator in string")
-                sb.append(c)
+                builder.append(c)
             }
         }
     }
@@ -287,7 +299,7 @@ object JSONParser {
             val bd = BigDecimal(bi)
             return if (sign == '-') {
                 CasonNumber.finite(bd.negate())
-            } else{
+            } else {
                 CasonNumber.finite(bd)
             }
         }
@@ -344,7 +356,7 @@ object JSONParser {
                 expDigits++
             }
             if (expDigits == 0) {
-                this.index = expStart
+                resetIndex(expStart)
                 error("Invalid exponent (no digits)")
             }
         }
@@ -361,7 +373,7 @@ object JSONParser {
         return try {
             CasonNumber.finite(BigDecimal(normalized))
         } catch (_: Exception) {
-            // helpful context.
+            // Helpful context.
             val around = this.string.substring(maxOf(0, startIdx), minOf(this.string.length, startIdx + 30))
             error("Invalid number literal '$lit' (around '$around')")
         }
@@ -384,7 +396,7 @@ object JSONParser {
             // comments.
             if (peek() == '/' && peek2() == '/') {
                 // line comment.
-                next(); next()
+                nextTwice()
                 while (true) {
                     val c = peek() ?: break
                     if (isLineTerminator(c)) {
@@ -449,8 +461,7 @@ object JSONParser {
         }
     }
 
-    private fun Char.isHexDigit(): Boolean =
-        (this in '0'..'9') || (this in 'a'..'f') || (this in 'A'..'F')
+    private fun Char.isHexDigit(): Boolean = (this in '0'..'9') || (this in 'a'..'f') || (this in 'A'..'F')
 
     private fun hexVal(c: Char): Int = when (c) {
         in '0'..'9' -> c.code - '0'.code
@@ -474,17 +485,19 @@ object JSONParser {
 
     private fun CharReader.parseIdentifier(): String {
         val c = peek() ?: error("Expected identifier but got EOF")
-        if (!isIdStart(c)) error("Invalid identifier start '$c'")
-        val sb = StringBuilder()
-        sb.append(next())
+        if (!isIdStart(c)) {
+            error("Invalid identifier start '$c'")
+        }
+        val builder = StringBuilder()
+        builder.append(next())
         while (true) {
             val ch = peek() ?: break
             if (!isIdPart(ch)) {
                 break
             }
-            sb.append(next())
+            builder.append(next())
         }
-        return sb.toString()
+        return builder.toString()
     }
 
     fun writeValue(builder: StringBuilder, element: JSONElement, pretty: Boolean, indent: String, depth: Int) {
@@ -497,6 +510,7 @@ object JSONParser {
                     builder.append("false")
                 }
             }
+
             is JSONString -> builder.append(renderString(element.asString()))
             is JSONNumber -> builder.append(element.toString())
             is JSONArray -> writeArray(builder, element, pretty, indent, depth)
@@ -560,6 +574,7 @@ object JSONParser {
                         builder.append('\'')
                     }
                 }
+
                 '"' -> {
                     if (quote == '"') {
                         builder.append("\\\"")
@@ -567,6 +582,7 @@ object JSONParser {
                         builder.append('"')
                     }
                 }
+
                 '\u2028' -> builder.append("\\u2028")
                 '\u2029' -> builder.append("\\u2029")
                 else -> {
