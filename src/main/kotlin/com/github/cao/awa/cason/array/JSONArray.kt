@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package com.github.cao.awa.cason.array
 
 import com.github.cao.awa.cason.JSONElement
@@ -51,8 +53,37 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     fun getFloat(index: Int, back: () -> Float): Float = (getElement(index) as? JSONNumber)?.asFloat() ?: back()
     fun getDouble(index: Int, back: () -> Double): Double = (getElement(index) as? JSONNumber)?.asDouble() ?: back()
 
-    private fun getElement(key: Int): Any? {
-        return this.list[key].let {
+    fun compute(index: Int, back: (JSONArray?) -> JSONArray): JSONArray = set(index, back(getArray(index)))
+    fun compute(index: Int, back: (JSONObject?) -> JSONObject): JSONArray = set(index, back(getJSON(index)))
+    fun compute(index: Int, back: (String?) -> String): JSONArray = set(index, back(getString(index)))
+    fun compute(index: Int, back: (Boolean?) -> Boolean): JSONArray = set(index, back(getBoolean(index)))
+    fun compute(index: Int, back: (Byte?) -> Byte): JSONArray = set(index, back(getByte(index)))
+    fun compute(index: Int, back: (Short?) -> Short): JSONArray = set(index, back(getShort(index)))
+    fun compute(index: Int, back: (Int?) -> Int): JSONArray = set(index, back(getInt(index)))
+    fun compute(index: Int, back: (Long?) -> Long): JSONArray = set(index, back(getLong(index)))
+    fun compute(index: Int, back: (Float?) -> Float): JSONArray = set(index, back(getFloat(index)))
+    fun compute(index: Int, back: (Double?) -> Double): JSONArray = set(index, back(getDouble(index)))
+
+    fun set(index: Int, value: JSONArray) = setElement(index, value)
+    fun set(index: Int, value: JSONObject) = setElement(index, value)
+    fun set(index: Int, value: String) = setElement(index, JSONString(value))
+    fun set(index: Int, value: Boolean) = setElement(index, JSONBoolean(value))
+    fun set(index: Int, value: Byte) = setElement(index, JSONNumber.ofByte(value))
+    fun set(index: Int, value: Short) = setElement(index, JSONNumber.ofShort(value))
+    fun set(index: Int, value: Int) = setElement(index, JSONNumber.ofInt(value))
+    fun set(index: Int, value: Long) = setElement(index, JSONNumber.ofLong(value))
+    fun set(index: Int, value: Float) = setElement(index, JSONNumber.ofFloat(value))
+    fun set(index: Int, value: Double) = setElement(index, JSONNumber.ofDouble(value))
+
+    fun isEmpty(): Boolean = this.list.isEmpty()
+
+    private fun setElement(index: Int, value: JSONElement): JSONArray {
+        this.list[index] = value
+        return this
+    }
+
+    private fun getElement(index: Int): JSONElement? {
+        return this.list[index].let {
             if (it is JSONNull) {
                 null
             } else {

@@ -1,3 +1,4 @@
+@file:Suppress("unused")
 package com.github.cao.awa.cason.obj
 
 import com.github.cao.awa.cason.JSONElement
@@ -10,7 +11,7 @@ import com.github.cao.awa.cason.writer.JSONWriter
 import kotlin.collections.component1
 import kotlin.collections.component2
 
-class JSONObject(private val map: LinkedHashMap<String, JSONElement>): JSONElement {
+class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElement {
     constructor(body: JSONObject.() -> Unit) : this(LinkedHashMap<String, JSONElement>()) {
         body(this)
     }
@@ -71,6 +72,25 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>): JSONEleme
     fun getLong(key: String, back: () -> Long): Long = (getElement(key) as? JSONNumber)?.asLong() ?: back()
     fun getFloat(key: String, back: () -> Float): Float = (getElement(key) as? JSONNumber)?.asFloat() ?: back()
     fun getDouble(key: String, back: () -> Double): Double = (getElement(key) as? JSONNumber)?.asDouble() ?: back()
+
+    fun isPresent(key: String): Boolean = this.map.containsKey(key)
+
+    fun compute(key: String, back: (JSONArray?) -> JSONArray): JSONObject = put(key, back(getArray(key)))
+    fun compute(key: String, back: (JSONObject?) -> JSONObject): JSONObject = put(key, back(getJSON(key)))
+    fun compute(key: String, back: (String?) -> String): JSONObject = put(key, back(getString(key)))
+    fun compute(key: String, back: (Boolean?) -> Boolean): JSONObject = put(key, back(getBoolean(key)))
+    fun compute(key: String, back: (Byte?) -> Byte): JSONObject = put(key, back(getByte(key)))
+    fun compute(key: String, back: (Short?) -> Short): JSONObject = put(key, back(getShort(key)))
+    fun compute(key: String, back: (Int?) -> Int): JSONObject = put(key, back(getInt(key)))
+    fun compute(key: String, back: (Long?) -> Long): JSONObject = put(key, back(getLong(key)))
+    fun compute(key: String, back: (Float?) -> Float): JSONObject = put(key, back(getFloat(key)))
+    fun compute(key: String, back: (Double?) -> Double): JSONObject = put(key, back(getDouble(key)))
+
+    fun forEach(action: (MutableMap.MutableEntry<String, JSONElement>)-> Unit) {
+        for (entry in this.map) {
+            action(entry)
+        }
+    }
 
     private fun getElement(key: String): Any? {
         return this.map[key]
