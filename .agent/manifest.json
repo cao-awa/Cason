@@ -1,0 +1,48 @@
+{
+  "generator": "codesummary",
+  "version": "1.0.0",
+  "model": "grok-4-1-fast-reasoning",
+  "timestamp": "2026-01-06T08:55:15.227Z",
+  "analysis": {
+    "projectName": "Kotlin Gradle Project",
+    "description": "A basic Kotlin JVM project skeleton using Gradle build system, with source and test directories.",
+    "techStack": [
+      "Kotlin",
+      "Gradle"
+    ],
+    "mainComponents": [
+      "src/main/kotlin",
+      "src/test/kotlin"
+    ],
+    "hasDatabase": false,
+    "hasApi": false,
+    "keyFiles": [
+      "build.gradle",
+      "settings.gradle",
+      "gradlew",
+      "gradlew.bat",
+      "gradle.properties"
+    ],
+    "entryPoints": [
+      "src/main/kotlin"
+    ],
+    "buildSystem": "Gradle"
+  },
+  "files": {
+    "docs": [
+      "ARCHITECTURE.md",
+      "API.md",
+      "DATABASE.md",
+      "SETUP.md",
+      "README.md"
+    ],
+    "agent": [
+      "context.md",
+      "codebase-overview.md"
+    ]
+  },
+  "usage": {
+    "inputTokens": 3005,
+    "outputTokens": 5190
+  }
+}
