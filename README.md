@@ -19,7 +19,7 @@ Cason is optimized for real-world usage scenarios:
 - **vs fastjson2**: Slightly slower for pure throughput but more memory efficient
 - **JSON5**: Competitive parsing speed with excellent error recovery
 
-Benchmarks vary based on document structure and complexity. For most applications, Cason provides an excellent balance of speed, features, and maintainability.
+Benchmarks parsing a 15000 elements object, repeat 10000 times to widen the performance gap. For most applications, Cason provides an excellent balance of speed, features, and maintainability.
 
 ## Installation
 Cason can install from github with adding the repo:
@@ -68,7 +68,7 @@ fun main() {
         }
     """.trimIndent()
 
-    val jsonObject = JSONParser.parse(jsonString)
+    val jsonObject = JSONParser.parseObject(jsonString)
     
     val name = jsonObject.getString("name")
     val version = jsonObject.getString("version")
@@ -98,7 +98,7 @@ fun main() {
         }
     """.trimIndent()
 
-    val jsonObject = JSONParser.parse(json5String)
+    val jsonObject = JSONParser.parseObject(json5String)
     
     // Use the parsed data...
 }
@@ -107,8 +107,8 @@ fun main() {
 # Serialization
 
 ```kotlin
-import com.yourdomain.cason.Cason
-import com.yourdomain.cason.JsonObject
+import com.github.cao.awa.cason.obj.JSONObject
+import com.github.cao.awa.cason.writer.JSONWriter
 
 fun main() {
     val data = JSONObject {
@@ -122,7 +122,7 @@ fun main() {
         }
     }
     
-    val jsonString = JSONParser.stringify(data, pretty = true)
+    val jsonString = JSONWriter.stringify(data, pretty = true)
     println(jsonString)
 }
 ```
