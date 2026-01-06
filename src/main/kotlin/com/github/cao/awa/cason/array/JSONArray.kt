@@ -1,12 +1,33 @@
-package com.github.cao.awa.cason.arr
+package com.github.cao.awa.cason.array
 
 import com.github.cao.awa.cason.JSONElement
+import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.parser.JSONParser.writeValue
+import com.github.cao.awa.cason.primary.JSONBoolean
+import com.github.cao.awa.cason.primary.JSONNull
+import com.github.cao.awa.cason.primary.JSONNumber
+import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.setting.JSONSettings
 
 data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
-    fun add(element: JSONElement) {
+    constructor(body: JSONArray.() -> Unit) : this(ArrayList<JSONElement>()) {
+        body(this)
+    }
+
+    fun add(): JSONArray = add(JSONNull)
+    fun add(value: JSONObject): JSONArray = add(value)
+    fun add(value: JSONArray): JSONArray = add(value)
+    fun add(value: Boolean): JSONArray = add(JSONBoolean(value))
+    fun add(value: String): JSONArray = add(JSONString(value))
+    fun add(value: Byte): JSONArray = add(JSONNumber.ofByte(value))
+    fun add(value: Short): JSONArray = add(JSONNumber.ofShort(value))
+    fun add(value: Int): JSONArray = add(JSONNumber.ofInt(value))
+    fun add(value: Long): JSONArray = add(JSONNumber.ofLong(value))
+    fun add(value: Float): JSONArray = add(JSONNumber.ofFloat(value))
+
+    fun add(element: JSONElement): JSONArray {
         this.list.add(element)
+        return this
     }
 
     fun toString(pretty: Boolean, indent: String, depth: Int): String {

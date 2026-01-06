@@ -1,4 +1,32 @@
+import com.github.cao.awa.cason.obj.JSONObject
+import com.github.cao.awa.cason.parser.JSONParser
+
 fun main() {
+dsl()
+}
+
+fun dsl() {
+    val json = JSONObject {
+        put("name", "Cason")
+        put("version", "1.0.0")
+        array("keywords") {
+            add("kotlin")
+            add("json")
+            add("json5")
+            add("parser")
+        }
+        json("awa") {
+            put("test-awa", "awa")
+            put("test-number", 1234567)
+        }
+    }
+
+    println(JSONParser.stringify(json).also {
+        println((JSONParser.parse(it) as JSONObject).getArray("keywords"))
+    })
+}
+
+fun parsing() {
     val data = """
 {
   "schema_style": "conium",

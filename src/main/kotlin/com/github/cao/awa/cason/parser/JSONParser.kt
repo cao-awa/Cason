@@ -1,7 +1,7 @@
 package com.github.cao.awa.cason.parser
 
 import com.github.cao.awa.cason.JSONElement
-import com.github.cao.awa.cason.arr.JSONArray
+import com.github.cao.awa.cason.array.JSONArray
 import com.github.cao.awa.cason.exception.JSONParseException
 import com.github.cao.awa.cason.number.CasonNumber
 import com.github.cao.awa.cason.obj.JSONObject
@@ -17,6 +17,10 @@ import java.math.BigInteger
 import kotlin.text.iterator
 
 object JSONParser {
+    fun parseObject(input: String): JSONObject = parse(input) as JSONObject
+
+    fun parseArray(input: String): JSONArray = parse(input) as JSONArray
+
     fun parse(input: String): JSONElement {
         val reader = CharReader(input)
         val element = reader.parseElement()

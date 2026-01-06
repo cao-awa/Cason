@@ -1,5 +1,6 @@
 package com.github.cao.awa.cason.number
 
+import com.github.cao.awa.cason.primary.JSONNumber
 import java.math.BigDecimal
 
 data class CasonNumber(
@@ -18,6 +19,13 @@ data class CasonNumber(
         fun nan() = CasonNumber(Kind.NAN, null)
         fun posInf() = CasonNumber(Kind.POS_INF, null)
         fun negInf() = CasonNumber(Kind.NEG_INF, null)
+
+        fun ofByte(value: Byte): CasonNumber = CasonNumber(Kind.FINITE, BigDecimal.valueOf(value.toLong()))
+        fun ofShort(value: Short): CasonNumber = CasonNumber(Kind.FINITE, BigDecimal.valueOf(value.toLong()))
+        fun ofInt(value: Int): CasonNumber = CasonNumber(Kind.FINITE, BigDecimal.valueOf(value.toLong()))
+        fun ofLong(value: Long): CasonNumber = CasonNumber(Kind.FINITE, BigDecimal.valueOf(value))
+        fun ofFloat(value: Float): CasonNumber = CasonNumber(Kind.FINITE, BigDecimal.valueOf(value.toDouble()))
+        fun ofDouble(value: Double): CasonNumber = CasonNumber(Kind.FINITE, BigDecimal.valueOf(value))
     }
 
     private fun getNumber(): BigDecimal {
