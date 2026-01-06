@@ -35,6 +35,17 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>): JSONEleme
     fun put(key: String, value: Float): JSONObject = putElement(key, JSONNumber.ofFloat(value))
     fun put(key: String, value: Double): JSONObject = putElement(key, JSONNumber.ofDouble(value))
 
+    infix fun String.set(value: JSONObject): JSONObject = put(this, value)
+    infix fun String.set(value: JSONArray): JSONObject = put(this, value)
+    infix fun String.set(value: String): JSONObject = put(this, value)
+    infix fun String.set(value: Boolean): JSONObject = put(this, value)
+    infix fun String.set(value: Byte): JSONObject = put(this, value)
+    infix fun String.set(value: Short): JSONObject = put(this, value)
+    infix fun String.set(value: Int): JSONObject = put(this, value)
+    infix fun String.set(value: Long): JSONObject = put(this, value)
+    infix fun String.set(value: Float): JSONObject = put(this, value)
+    infix fun String.set(value: Double): JSONObject = put(this, value)
+
     private fun putElement(key: String, value: JSONElement): JSONObject {
         this.map[key] = value
         return this

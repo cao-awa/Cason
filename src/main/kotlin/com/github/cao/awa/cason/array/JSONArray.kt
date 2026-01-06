@@ -17,13 +17,17 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     fun add(): JSONArray = add(JSONNull)
     fun add(value: JSONObject): JSONArray = add(value)
     fun add(value: JSONArray): JSONArray = add(value)
-    fun add(value: Boolean): JSONArray = add(JSONBoolean(value))
     fun add(value: String): JSONArray = add(JSONString(value))
+    fun add(value: Boolean): JSONArray = add(JSONBoolean(value))
     fun add(value: Byte): JSONArray = add(JSONNumber.ofByte(value))
     fun add(value: Short): JSONArray = add(JSONNumber.ofShort(value))
     fun add(value: Int): JSONArray = add(JSONNumber.ofInt(value))
     fun add(value: Long): JSONArray = add(JSONNumber.ofLong(value))
     fun add(value: Float): JSONArray = add(JSONNumber.ofFloat(value))
+    fun add(value: Double): JSONArray = add(JSONNumber.ofDouble(value))
+
+    operator fun String.unaryPlus(): JSONArray = add(this)
+    operator fun Boolean.unaryPlus(): JSONArray = add(this)
 
     fun add(element: JSONElement): JSONArray {
         this.list.add(element)
