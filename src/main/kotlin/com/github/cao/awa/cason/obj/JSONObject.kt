@@ -2,12 +2,11 @@ package com.github.cao.awa.cason.obj
 
 import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
-import com.github.cao.awa.cason.parser.JSONParser.renderKey
-import com.github.cao.awa.cason.parser.JSONParser.writeValue
 import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.setting.JSONSettings
+import com.github.cao.awa.cason.writer.JSONWriter
 import kotlin.collections.component1
 import kotlin.collections.component2
 
@@ -94,13 +93,13 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>): JSONEleme
             if (pretty) {
                 builder.append(indent.repeat(depth + 1))
             }
-            builder.append(renderKey(k))
+            builder.append(JSONWriter.renderKey(k))
             if (pretty) {
                 builder.append(": ")
             } else {
                 builder.append(":")
             }
-            writeValue(builder, v, pretty, indent, depth + 1)
+            JSONWriter.writeValue(builder, v, pretty, indent, depth + 1)
             if (idx != entries.lastIndex) {
                 builder.append(',')
             }

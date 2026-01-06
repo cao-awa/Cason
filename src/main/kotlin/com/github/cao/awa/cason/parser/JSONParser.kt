@@ -12,6 +12,9 @@ import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.reader.CharReader
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
+import com.github.cao.awa.cason.util.CasonUtil
+import com.github.cao.awa.cason.util.CasonUtil.isHexDigit
+import com.github.cao.awa.cason.util.CasonUtil.parseIdentifier
 import java.math.BigDecimal
 import java.math.BigInteger
 import kotlin.text.iterator
@@ -31,16 +34,6 @@ object JSONParser {
         reader.error("Trailing characters after top-level value")
     }
 
-    fun stringify(
-        value: JSONElement,
-        pretty: Boolean = false,
-        indent: String = "  "
-    ): String {
-        val sb = StringBuilder()
-        writeValue(sb, value, pretty, indent, 0)
-        return sb.toString()
-    }
-
     private fun CharReader.error(msg: String): Nothing {
         val start = maxOf(0, this.index - 20)
         val end = minOf(this.string.length, this.index + 20)
@@ -58,7 +51,7 @@ object JSONParser {
             '\'', '"' -> JSONString(parseString())
             '+', '-', '.', in '0'..'9' -> JSONNumber(parseNumber())
             else -> {
-                if (isIdStart(c)) {
+                if (CasonUtil.isIdStart(c)) {
                     when (val id = parseIdentifier()) {
                         "null" -> JSONNull
                         "true" -> JSONBoolean(true)
@@ -123,7 +116,7 @@ object JSONParser {
             // Numeric key literal like {1: "a"} is valid in JS object literal style.
             parseNumber().toString()
         } else {
-            if (isIdStart(c)) {
+            if (CasonUtil.isIdStart(c)) {
                 // In key position, allow keywords too.
                 when (val id = parseIdentifier()) {
                     "null", "true", "false", "Infinity", "NaN" -> id
@@ -183,7 +176,7 @@ object JSONParser {
             if (c == '\\') {
                 val n = peek() ?: error("Unterminated escape")
                 // Line continuation: backslash + line terminator => skip both
-                if (isLineTerminator(n)) {
+                if (CasonUtil.isLineTerminator(n)) {
                     consumeLineTerminator()
                     continue
                 }
@@ -210,7 +203,7 @@ object JSONParser {
                     'x' -> {
                         val h1 = next() ?: error("Invalid \\x escape")
                         val h2 = next() ?: error("Invalid \\x escape")
-                        val code = hexVal(h1) * 16 + hexVal(h2)
+                        val code = CasonUtil.hexVal(h1) * 16 + CasonUtil.hexVal(h2)
                         if (code < 0) {
                             error("Invalid hex in \\x escape")
                         }
@@ -241,7 +234,7 @@ object JSONParser {
                                 next() ?: error("Invalid \\u escape")
                             }
                             val code = h.fold(0) { acc, ch ->
-                                val v = hexVal(ch)
+                                val v = CasonUtil.hexVal(ch)
                                 if (v < 0) {
                                     error("Invalid hex digit in \\u escape: '$ch'")
                                 }
@@ -257,7 +250,7 @@ object JSONParser {
                     }
                 }
             } else {
-                if (isLineTerminator(c)) error("Unescaped line terminator in string")
+                if (CasonUtil.isLineTerminator(c)) error("Unescaped line terminator in string")
                 builder.append(c)
             }
         }
@@ -389,7 +382,7 @@ object JSONParser {
             var moved = false
             while (true) {
                 val c = peek() ?: break
-                if (isWs(c) || isLineTerminator(c)) {
+                if (CasonUtil.isWs(c) || CasonUtil.isLineTerminator(c)) {
                     next()
                     moved = true
                 } else {
@@ -403,7 +396,7 @@ object JSONParser {
                 nextTwice()
                 while (true) {
                     val c = peek() ?: break
-                    if (isLineTerminator(c)) {
+                    if (CasonUtil.isLineTerminator(c)) {
                         break
                     }
                     next()
@@ -463,142 +456,5 @@ object JSONParser {
         repeat(lit.length) {
             next()
         }
-    }
-
-    private fun Char.isHexDigit(): Boolean = (this in '0'..'9') || (this in 'a'..'f') || (this in 'A'..'F')
-
-    private fun hexVal(c: Char): Int = when (c) {
-        in '0'..'9' -> c.code - '0'.code
-        in 'a'..'f' -> 10 + (c.code - 'a'.code)
-        in 'A'..'F' -> 10 + (c.code - 'A'.code)
-        else -> -1
-    }
-
-    private fun isWs(c: Char): Boolean =
-        c == ' ' || c == '\t' || c == '\u000B' || c == '\u000C' ||
-                c == '\u00A0' || c == '\uFEFF' || Character.isWhitespace(c)
-
-    private fun isLineTerminator(c: Char): Boolean =
-        c == '\n' || c == '\r' || c == '\u2028' || c == '\u2029'
-
-    private fun isIdStart(c: Char): Boolean =
-        c == '$' || c == '_' || Character.isJavaIdentifierStart(c)
-
-    private fun isIdPart(c: Char): Boolean =
-        c == '$' || c == '_' || Character.isJavaIdentifierPart(c)
-
-    private fun CharReader.parseIdentifier(): String {
-        val c = peek() ?: error("Expected identifier but got EOF")
-        if (!isIdStart(c)) {
-            error("Invalid identifier start '$c'")
-        }
-        val builder = StringBuilder()
-        builder.append(next())
-        while (true) {
-            val ch = peek() ?: break
-            if (!isIdPart(ch)) {
-                break
-            }
-            builder.append(next())
-        }
-        return builder.toString()
-    }
-
-    fun writeValue(builder: StringBuilder, element: JSONElement, pretty: Boolean, indent: String, depth: Int) {
-        when (element) {
-            is JSONNull -> builder.append("null")
-            is JSONBoolean -> {
-                if (element.value) {
-                    builder.append("true")
-                } else {
-                    builder.append("false")
-                }
-            }
-
-            is JSONString -> builder.append(renderString(element.asString()))
-            is JSONNumber -> builder.append(element.toString())
-            is JSONArray -> writeArray(builder, element, pretty, indent, depth)
-            is JSONObject -> writeObject(builder, element, pretty, indent, depth)
-        }
-    }
-
-    private fun writeArray(builder: StringBuilder, array: JSONArray, pretty: Boolean, indent: String, depth: Int) {
-        builder.append(array.toString(pretty, indent, depth))
-    }
-
-    private fun writeObject(builder: StringBuilder, obj: JSONObject, pretty: Boolean, indent: String, depth: Int) {
-        builder.append(obj.toString(pretty, indent, depth))
-    }
-
-    fun renderKey(key: String): String {
-        return if (isSafeUnquotedKey(key) && JSONSettings.serializeVersion == JSONSerializeVersion.JSON5) {
-            key
-        } else {
-            renderString(key)
-        }
-    }
-
-    private fun isSafeUnquotedKey(key: String): Boolean {
-        if (key.isEmpty()) {
-            return false
-        }
-        val first = key[0]
-        if (isIdStart(first)) {
-            for (i in 1 until key.length) {
-                if (!isIdPart(key[i])) {
-                    return false
-                }
-            }
-            return true
-        }
-        return false
-    }
-
-    private fun renderString(s: String): String {
-        val quote = if (JSONSettings.preferSingleQuote) {
-            '\''
-        } else {
-            '"'
-        }
-        val builder = StringBuilder()
-        builder.append(quote)
-        for (ch in s) {
-            when (ch) {
-                '\\' -> builder.append("\\\\")
-                '\b' -> builder.append("\\b")
-                '\u000C' -> builder.append("\\f")
-                '\n' -> builder.append("\\n")
-                '\r' -> builder.append("\\r")
-                '\t' -> builder.append("\\t")
-                '\u000B' -> builder.append("\\v")
-                '\'' -> {
-                    if (quote == '\'') {
-                        builder.append("\\'")
-                    } else {
-                        builder.append('\'')
-                    }
-                }
-
-                '"' -> {
-                    if (quote == '"') {
-                        builder.append("\\\"")
-                    } else {
-                        builder.append('"')
-                    }
-                }
-
-                '\u2028' -> builder.append("\\u2028")
-                '\u2029' -> builder.append("\\u2029")
-                else -> {
-                    if (ch.code < 0x20) {
-                        builder.append("\\u").append(ch.code.toString(16).padStart(4, '0'))
-                    } else {
-                        builder.append(ch)
-                    }
-                }
-            }
-        }
-        builder.append(quote)
-        return builder.toString()
     }
 }

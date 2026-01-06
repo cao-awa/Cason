@@ -1,11 +1,16 @@
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.parser.JSONParser
+import com.github.cao.awa.cason.serialize.JSONSerializeVersion
+import com.github.cao.awa.cason.setting.JSONSettings
+import com.github.cao.awa.cason.writer.JSONWriter
 
 fun main() {
     dsl()
 }
 
 fun dsl() {
+    JSONSettings.preferSingleQuote = true
+    JSONSettings.serializeVersion = JSONSerializeVersion.JSON5
     val json = JSONObject {
         "name" set "Cason"
         "version" set "1.0.0"
@@ -21,7 +26,7 @@ fun dsl() {
         }
     }
 
-    println(JSONParser.stringify(json, pretty = true).also {
+    println(JSONWriter.stringify(json, pretty = true).also {
         println((JSONParser.parse(it) as JSONObject).getArray("keywords"))
     })
 }

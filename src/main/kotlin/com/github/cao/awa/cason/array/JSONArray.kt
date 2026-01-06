@@ -2,12 +2,12 @@ package com.github.cao.awa.cason.array
 
 import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.obj.JSONObject
-import com.github.cao.awa.cason.parser.JSONParser.writeValue
 import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.setting.JSONSettings
+import com.github.cao.awa.cason.writer.JSONWriter
 
 data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     constructor(body: JSONArray.() -> Unit) : this(ArrayList<JSONElement>()) {
@@ -49,7 +49,7 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
             if (pretty) {
                 builder.append(indent.repeat(depth + 1))
             }
-            writeValue(builder, this.list[idx], pretty, indent, depth + 1)
+            JSONWriter.writeValue(builder, this.list[idx], pretty, indent, depth + 1)
             if (idx != this.list.lastIndex) {
                 builder.append(',')
             }
