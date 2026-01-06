@@ -29,6 +29,38 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     operator fun String.unaryPlus(): JSONArray = add(this)
     operator fun Boolean.unaryPlus(): JSONArray = add(this)
 
+    fun getArray(index: Int): JSONArray? = getElement(index) as? JSONArray
+    fun getJSON(index: Int): JSONObject? = getElement(index) as? JSONObject
+    fun getString(index: Int): String? = (getElement(index) as? JSONString)?.asString()
+    fun getBoolean(index: Int): Boolean? = (getElement(index) as? JSONBoolean)?.value
+    fun getByte(index: Int): Byte? = (getElement(index) as? JSONNumber)?.asByte()
+    fun getShort(index: Int): Short? = (getElement(index) as? JSONNumber)?.asShort()
+    fun getInt(index: Int): Int? = (getElement(index) as? JSONNumber)?.asInt()
+    fun getLong(index: Int): Long? = (getElement(index) as? JSONNumber)?.asLong()
+    fun getFloat(index: Int): Float? = (getElement(index) as? JSONNumber)?.asFloat()
+    fun getDouble(index: Int): Double? = (getElement(index) as? JSONNumber)?.asDouble()
+
+    fun getArray(index: Int, back: () -> JSONArray): JSONArray = getElement(index) as? JSONArray ?: back()
+    fun getJSON(index: Int, back: () -> JSONObject): JSONObject = getElement(index) as? JSONObject ?: back()
+    fun getString(index: Int, back: () -> String): String = (getElement(index) as? JSONString)?.asString() ?: back()
+    fun getBoolean(index: Int, back: () -> Boolean): Boolean = (getElement(index) as? JSONBoolean)?.value ?: back()
+    fun getByte(index: Int, back: () -> Byte): Byte = (getElement(index) as? JSONNumber)?.asByte() ?: back()
+    fun getShort(index: Int, back: () -> Short): Short = (getElement(index) as? JSONNumber)?.asShort() ?: back()
+    fun getInt(index: Int, back: () -> Int): Int = (getElement(index) as? JSONNumber)?.asInt() ?: back()
+    fun getLong(index: Int, back: () -> Long): Long = (getElement(index) as? JSONNumber)?.asLong() ?: back()
+    fun getFloat(index: Int, back: () -> Float): Float = (getElement(index) as? JSONNumber)?.asFloat() ?: back()
+    fun getDouble(index: Int, back: () -> Double): Double = (getElement(index) as? JSONNumber)?.asDouble() ?: back()
+
+    private fun getElement(key: Int): Any? {
+        return this.list[key].let {
+            if (it is JSONNull) {
+                null
+            } else {
+                it
+            }
+        }
+    }
+
     fun add(element: JSONElement): JSONArray {
         this.list.add(element)
         return this

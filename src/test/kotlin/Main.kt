@@ -27,7 +27,7 @@ fun dsl() {
     }
 
     println(JSONWriter.stringify(json, pretty = true).also {
-        println((JSONParser.parse(it) as JSONObject).getArray("keywords"))
+        println((JSONParser.parse(it) as JSONObject).getArray("keywords")?.getString(0))
     })
 }
 

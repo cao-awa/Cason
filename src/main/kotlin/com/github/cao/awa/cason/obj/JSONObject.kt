@@ -52,25 +52,25 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>): JSONEleme
 
     fun getArray(key: String): JSONArray? = getElement(key) as? JSONArray
     fun getJSON(key: String): JSONObject? = getElement(key) as? JSONObject
-    fun getString(key: String): String? = getElement(key) as? String
-    fun getBoolean(key: String): Boolean? = getElement(key) as? Boolean
-    fun getByte(key: String): Byte? = getElement(key) as? Byte
-    fun getShort(key: String): Short? = getElement(key) as? Short
-    fun getInt(key: String): Int? = getElement(key) as? Int
-    fun getLong(key: String): Long? = getElement(key) as? Long
-    fun getFloat(key: String): Float? = getElement(key) as? Float
-    fun getDouble(key: String): Double? = getElement(key) as? Double
+    fun getString(key: String): String? = (getElement(key) as? JSONString)?.asString()
+    fun getBoolean(key: String): Boolean? = (getElement(key) as? JSONBoolean)?.value
+    fun getByte(key: String): Byte? = (getElement(key) as? JSONNumber)?.asByte()
+    fun getShort(key: String): Short? = (getElement(key) as? JSONNumber)?.asShort()
+    fun getInt(key: String): Int? = (getElement(key) as? JSONNumber)?.asInt()
+    fun getLong(key: String): Long? = (getElement(key) as? JSONNumber)?.asLong()
+    fun getFloat(key: String): Float? = (getElement(key) as? JSONNumber)?.asFloat()
+    fun getDouble(key: String): Double? = (getElement(key) as? JSONNumber)?.asDouble()
 
     fun getArray(key: String, back: () -> JSONArray): JSONArray = getElement(key) as? JSONArray ?: back()
     fun getJSON(key: String, back: () -> JSONObject): JSONObject = getElement(key) as? JSONObject ?: back()
-    fun getString(key: String, back: () -> String): String = getElement(key) as? String ?: back()
-    fun getBoolean(key: String, back: () -> Boolean): Boolean = getElement(key) as? Boolean ?: back()
-    fun getByte(key: String, back: () -> Byte): Byte = getElement(key) as? Byte ?: back()
-    fun getShort(key: String, back: () -> Short): Short = getElement(key) as? Short ?: back()
-    fun getInt(key: String, back: () -> Int): Int = getElement(key) as? Int ?: back()
-    fun getLong(key: String, back: () -> Long): Long = getElement(key) as? Long ?: back()
-    fun getFloat(key: String, back: () -> Float): Float = getElement(key) as? Float ?: back()
-    fun getDouble(key: String, back: () -> Double): Double = getElement(key) as? Double ?: back()
+    fun getString(key: String, back: () -> String): String = (getElement(key) as? JSONString)?.asString() ?: back()
+    fun getBoolean(key: String, back: () -> Boolean): Boolean = (getElement(key) as? JSONBoolean)?.value ?: back()
+    fun getByte(key: String, back: () -> Byte): Byte = (getElement(key) as? JSONNumber)?.asByte() ?: back()
+    fun getShort(key: String, back: () -> Short): Short = (getElement(key) as? JSONNumber)?.asShort() ?: back()
+    fun getInt(key: String, back: () -> Int): Int = (getElement(key) as? JSONNumber)?.asInt() ?: back()
+    fun getLong(key: String, back: () -> Long): Long = (getElement(key) as? JSONNumber)?.asLong() ?: back()
+    fun getFloat(key: String, back: () -> Float): Float = (getElement(key) as? JSONNumber)?.asFloat() ?: back()
+    fun getDouble(key: String, back: () -> Double): Double = (getElement(key) as? JSONNumber)?.asDouble() ?: back()
 
     private fun getElement(key: String): Any? {
         return this.map[key]

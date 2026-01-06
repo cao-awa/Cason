@@ -14,7 +14,7 @@ data class JSONNumber(val number: CasonNumber) : JSONElement {
         fun ofDouble(value: Double): JSONNumber = JSONNumber(CasonNumber.ofDouble(value))
     }
 
-    fun toByte(): Byte = number.toByte()
+    fun asByte(): Byte = number.toByte()
     fun asShort(): Short = this.number.toShort()
     fun asInt(): Int = this.number.toInt()
     fun asLong(): Long = this.number.toLong()
