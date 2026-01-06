@@ -47,7 +47,7 @@ fun main() {
     val testCount = 100000
 
     benchmark(testCount, "Cason") {
-        com.github.cao.awa.caoson.parser.JSONParser.parse(data)
+        com.github.cao.awa.cason.parser.JSONParser.parse(data)
     }
 
     benchmark(testCount, "fastjson") {

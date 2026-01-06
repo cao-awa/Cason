@@ -1,4 +1,4 @@
-package com.github.cao.awa.caoson.reader
+package com.github.cao.awa.cason.reader
 
 class CharReader(val string: String) {
     var index: Int = 0

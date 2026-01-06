@@ -1,4 +1,4 @@
-package com.github.cao.awa.caoson
+package com.github.cao.awa.cason
 
 interface JSONElement {
     fun isNumber(): Boolean

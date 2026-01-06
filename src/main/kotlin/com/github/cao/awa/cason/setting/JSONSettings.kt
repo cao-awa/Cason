@@ -1,6 +1,6 @@
-package com.github.cao.awa.caoson.setting
+package com.github.cao.awa.cason.setting
 
-import com.github.cao.awa.caoson.serialize.JSONSerializeVersion
+import com.github.cao.awa.cason.serialize.JSONSerializeVersion
 
 object JSONSettings {
     var prettyFormat: Boolean = false

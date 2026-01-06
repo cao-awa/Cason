@@ -1,6 +1,6 @@
-package com.github.cao.awa.caoson.primary
+package com.github.cao.awa.cason.primary
 
-import com.github.cao.awa.caoson.JSONElement
+import com.github.cao.awa.cason.JSONElement
 
 data class JSONBoolean(val value: Boolean) : JSONElement {
     override fun isNumber(): Boolean = false

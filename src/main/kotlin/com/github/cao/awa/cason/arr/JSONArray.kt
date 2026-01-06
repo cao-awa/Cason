@@ -1,13 +1,8 @@
-package com.github.cao.awa.caoson.arr
+package com.github.cao.awa.cason.arr
 
-import com.github.cao.awa.caoson.JSONElement
-import com.github.cao.awa.caoson.parser.JSONParser.renderKey
-import com.github.cao.awa.caoson.parser.JSONParser.writeValue
-import com.github.cao.awa.caoson.setting.JSONSettings
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.get
-import kotlin.text.iterator
+import com.github.cao.awa.cason.JSONElement
+import com.github.cao.awa.cason.parser.JSONParser.writeValue
+import com.github.cao.awa.cason.setting.JSONSettings
 
 data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     fun add(element: JSONElement) {

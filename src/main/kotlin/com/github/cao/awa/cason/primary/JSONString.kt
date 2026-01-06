@@ -1,6 +1,6 @@
-package com.github.cao.awa.caoson.primary
+package com.github.cao.awa.cason.primary
 
-import com.github.cao.awa.caoson.JSONElement
+import com.github.cao.awa.cason.JSONElement
 
 data class JSONString(private val value: String) : JSONElement {
     fun asString() = this.value
