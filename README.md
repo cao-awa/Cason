@@ -30,7 +30,7 @@ repositories {
         url = "https://maven.pkg.github.com/cao-awa/Cason"
         credentials {
             username = "<your-username>"
-            password = "your-github-token"
+            password = "<your-github-token>"
         }
     }
 }
