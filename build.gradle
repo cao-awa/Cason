@@ -11,7 +11,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = "https://github.com/cao-awa/Cason"
+            url = "https://maven.pkg.github.com/cao-awa/Cason"
             credentials {
                 username = System.getenv("GH_ACTOR")
                 password = System.getenv("GH_TOKEN")
