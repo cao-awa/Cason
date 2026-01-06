@@ -22,7 +22,7 @@ Cason is optimized for real-world usage scenarios:
 Benchmarks parsing a 15000 elements object, repeat 10000 times to widen the performance gap. For most applications, Cason provides an excellent balance of speed, features, and maintainability.
 
 ## Installation
-Cason can install from github with adding the repo:
+Cason can be installed from GitHub Packages by adding the following repository:
 ```groovy
 repositories {
     maven {
