@@ -28,3 +28,7 @@ jobs:
       with:
         name: Artifact
         path: build/libs/
+    - name: Publish to package
+      env:
+        GH_ACTOR: ${{ github.actor }}
+        GH_TOKEN: ${{ github.GH_TOKEN }}
