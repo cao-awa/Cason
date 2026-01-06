@@ -29,8 +29,8 @@ repositories {
         name = "GitHubPackages"
         url = "https://maven.pkg.github.com/cao-awa/Cason"
         credentials {
-            username = "cao-awa"
-            password = "ghp_UgALm1Ta2ONYeNh" + "S2m0XoWSc27BcE22v4Umn"
+            username = "<your-username>"
+            password = "your-github-token"
         }
     }
 }
