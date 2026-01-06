@@ -149,7 +149,7 @@ JSONSettings.prettyFormat = true
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/cason.git
+git clone https://github.com/cao-awa/cason.git
 cd cason
 
 # Build the project
