@@ -13,7 +13,6 @@ import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.reader.CharReader
 import com.github.cao.awa.cason.util.CasonUtil
 import java.math.BigDecimal
-import java.math.BigInteger
 
 object JSONParser {
     fun parseObject(input: String): JSONObject = parse(input) as JSONObject
@@ -64,13 +63,7 @@ object JSONParser {
 
     private fun CharReader.parseElement(): JSONElement {
         skipWsAndComments()
-        val index = this.index
-        if (index >= this.end) {
-            if (this.isFinal) {
-                error("Expected a value but got EOF")
-            }
-            throw NeedMoreInputException(this)
-        }
+        ensureAvailable(1)
         return when (this.chars[index]) {
             '{' -> parseObject()
             '[' -> parseArray()
@@ -184,46 +177,40 @@ object JSONParser {
         var line = this.line
         var col = this.col
 
-        fun stepLineTerminatorAt(pos: Int): Int {
-            val ch = chars[pos]
-            return when (ch) {
-                '\n', '\u2028', '\u2029' -> {
-                    line++
-                    col = 1
-                    pos + 1
-                }
-                '\r' -> {
-                    // Treat \r\n as one line break when possible.
-                    if (pos + 1 < end && chars[pos + 1] == '\n') {
-                        line++
-                        col = 1
-                        pos + 2
-                    } else {
-                        if (pos + 1 >= end && !this.isFinal) throw NeedMoreInputException(this)
-                        line++
-                        col = 1
-                        pos + 1
-                    }
-                }
-                else -> {
-                    // Not a terminator.
-                    col++
-                    pos + 1
-                }
-            }
-        }
-
         while (true) {
-            // Skip whitespace or line terminators.
+            // Skip whitespace and line terminators.
             while (index < end) {
-                val espaceChar = chars[index]
-                if (CasonUtil.isWs(espaceChar)) {
+                val c = chars[index]
+
+                // Fast whitespace (space / tab etc.).
+                if (CasonUtil.isWs(c)) {
                     index++
                     col++
                     continue
                 }
-                if (CasonUtil.isLineTerminator(espaceChar)) {
-                    index = stepLineTerminatorAt(index)
+
+                // Line terminators.
+                if (c == '\n' || c == '\u2028' || c == '\u2029') {
+                    index++
+                    line++
+                    col = 1
+                    continue
+                }
+                if (c == '\r') {
+                    if (index + 1 < end) {
+                        if (chars[index + 1] == '\n') {
+                            index += 2
+                        } else {
+                            index++
+                        }
+                    } else {
+                        if (!this.isFinal) {
+                            throw NeedMoreInputException(this)
+                        }
+                        index++
+                    }
+                    line++
+                    col = 1
                     continue
                 }
                 break
@@ -233,7 +220,15 @@ object JSONParser {
             if (index + 1 < end && chars[index] == '/' && chars[index + 1] == '/') {
                 index += 2
                 col += 2
-                while (index < end && !CasonUtil.isLineTerminator(chars[index])) {
+
+                while (index < end) {
+                    val c = chars[index]
+                    if (c == '\n' || c == '\u2028' || c == '\u2029') {
+                        break
+                    }
+                    if (c == '\r') {
+                        break
+                    }
                     index++
                     col++
                 }
@@ -258,12 +253,26 @@ object JSONParser {
                         col += 2
                         break
                     }
-                    if (CasonUtil.isLineTerminator(commentChar)) {
-                        index = stepLineTerminatorAt(index)
-                    } else {
+                    if (commentChar == '\n' || commentChar == '\u2028' || commentChar == '\u2029') {
                         index++
-                        col++
+                        line++
+                        col = 1
+                        continue
                     }
+
+                    if (commentChar == '\r') {
+                        if (index + 1 < end && chars[index + 1] == '\n') {
+                            index += 2
+                        } else {
+                            index++
+                        }
+                        line++
+                        col = 1
+                        continue
+                    }
+
+                    index++
+                    col++
                 }
                 continue
             }
@@ -304,8 +313,7 @@ object JSONParser {
         }
 
         // Slow path: escape or invalid content exists.
-        val builder = StringBuilder((index - start) + 16)
-        builder.appendRange(chars, start, index)
+        var result = String(chars, start, index)
 
         // Commit reader to first backslash.
         this.col += (index - start)
@@ -327,7 +335,7 @@ object JSONParser {
                 quote -> {
                     this.index = idx
                     this.col = col
-                    return builder.toString()
+                    return result
                 }
 
                 '\\' -> {
@@ -337,19 +345,17 @@ object JSONParser {
                     }
                     val esc = chars[idx++]
                     col++
-                    builder.append(
-                        when (esc) {
-                            'n' -> '\n'
-                            'r' -> '\r'
-                            't' -> '\t'
-                            'b' -> '\b'
-                            'f' -> '\u000C'
-                            '"' -> '"'
-                            '\'' -> '\''
-                            '\\' -> '\\'
-                            else -> error("Unknown escape \\$esc")
-                        }
-                    )
+                    result += (when (esc) {
+                        'n' -> '\n'
+                        'r' -> '\r'
+                        't' -> '\t'
+                        'b' -> '\b'
+                        'f' -> '\u000C'
+                        '"' -> '"'
+                        '\'' -> '\''
+                        '\\' -> '\\'
+                        else -> error("Unknown escape \\$esc")
+                    })
                 }
 
                 // Line terminators are illegal unless escaped
@@ -362,7 +368,7 @@ object JSONParser {
                     error("Unescaped line terminator in string")
                 }
 
-                else -> builder.append(c)
+                else -> result + c
             }
         }
     }
@@ -460,7 +466,9 @@ object JSONParser {
                 col++
 
                 if (index >= e) {
-                    if (this.isFinal) error("Invalid exponent in number")
+                    if (this.isFinal) {
+                        error("Invalid exponent in number")
+                    }
                     throw NeedMoreInputException(this)
                 }
 
@@ -500,14 +508,24 @@ object JSONParser {
         this.col = col
 
         // Materialize number.
-        val bd = if (!overflow && digits <= 18) {
+        val bd: BigDecimal = if (!overflow && digits <= 18) {
             // Fast path: fits in signed Long safely.
-            BigDecimal.valueOf(sign * mantissa).scaleByPowerOfTen(exp10)
+            if (exp10 == 0) {
+                BigDecimal.valueOf(sign * mantissa)
+            } else {
+                BigDecimal.valueOf(sign * mantissa).scaleByPowerOfTen(exp10)
+            }
         } else {
             // Slow path: fallback to BigInteger.
-            var bi = BigInteger.valueOf(mantissa)
-            if (sign < 0) bi = bi.negate()
-            BigDecimal(bi).scaleByPowerOfTen(exp10)
+            var bd = BigDecimal(mantissa)
+            if (sign < 0) {
+                bd = bd.negate()
+            }
+            if (exp10 == 0) {
+                bd
+            } else {
+                bd.scaleByPowerOfTen(exp10)
+            }
         }
 
         return CasonNumber.finite(bd)
