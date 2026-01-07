@@ -1,4 +1,4 @@
-package com.github.cao.awa.cason.writer
+package com.github.cao.awa.cason.serialize.writer
 
 import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
@@ -10,6 +10,7 @@ import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
 import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.util.CasonUtil
+import kotlin.text.iterator
 
 object JSONWriter {
     fun stringify(
@@ -17,9 +18,9 @@ object JSONWriter {
         pretty: Boolean = false,
         indent: String = "  "
     ): String {
-        val sb = StringBuilder()
-        writeValue(sb, value, pretty, indent, 0)
-        return sb.toString()
+        val builder = StringBuilder()
+        writeValue(builder, value, pretty, indent, 0)
+        return builder.toString()
     }
 
     fun writeValue(builder: StringBuilder, element: JSONElement, pretty: Boolean, indent: String, depth: Int) {
@@ -32,7 +33,6 @@ object JSONWriter {
                     builder.append("false")
                 }
             }
-
             is JSONString -> builder.append(renderString(element.asString()))
             is JSONNumber -> builder.append(element.toString())
             is JSONArray -> writeArray(builder, element, pretty, indent, depth)
@@ -96,7 +96,6 @@ object JSONWriter {
                         builder.append('\'')
                     }
                 }
-
                 '"' -> {
                     if (quote == '"') {
                         builder.append("\\\"")
@@ -104,7 +103,6 @@ object JSONWriter {
                         builder.append('"')
                     }
                 }
-
                 '\u2028' -> builder.append("\\u2028")
                 '\u2029' -> builder.append("\\u2029")
                 else -> {

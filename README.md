@@ -57,7 +57,7 @@ dependencies {
 ## Basic JSON Parsing
 
 ```kotlin
-import com.github.cao.awa.cason.parser.JSONParser
+import com.github.cao.awa.cason.serialize.parser.JSONParser
 
 fun main() {
     val jsonString = """
@@ -82,7 +82,7 @@ fun main() {
 ## JSON5 Support
 
 ```kotlin
-import com.github.cao.awa.cason.parser.JSONParser
+import com.github.cao.awa.cason.serialize.parser.JSONParser
 
 fun main() {
     val json5String = """
@@ -108,7 +108,7 @@ fun main() {
 
 ```kotlin
 import com.github.cao.awa.cason.obj.JSONObject
-import com.github.cao.awa.cason.writer.JSONWriter
+import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 fun main() {
     val data = JSONObject {
@@ -131,7 +131,8 @@ fun main() {
 
 Core Classes
 
-* JSONParser: Main entry point for parsing and serialization
+* JSONParser: Main entry point for JSON parsing
+* JSONWriter: Main entry point for JSON serialization
 * JSONObject: Type-safe JSON object representation
 * JSONArray: Mutable JSON array implementation
 * JSONElement: Base class for all JSON elements

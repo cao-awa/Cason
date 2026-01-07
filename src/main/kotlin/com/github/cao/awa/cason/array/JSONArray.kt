@@ -9,7 +9,7 @@ import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.setting.JSONSettings
-import com.github.cao.awa.cason.writer.JSONWriter
+import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     constructor(body: JSONArray.() -> Unit) : this(ArrayList<JSONElement>()) {

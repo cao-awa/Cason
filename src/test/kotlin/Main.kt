@@ -1,8 +1,8 @@
 import com.github.cao.awa.cason.obj.JSONObject
-import com.github.cao.awa.cason.parser.JSONParser
+import com.github.cao.awa.cason.serialize.parser.JSONParser
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
 import com.github.cao.awa.cason.setting.JSONSettings
-import com.github.cao.awa.cason.writer.JSONWriter
+import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 fun main() {
     parsing()
@@ -85,7 +85,7 @@ fun parsing() {
     val testCount = 100000
 
     benchmark(testCount, "Cason") {
-        com.github.cao.awa.cason.parser.JSONParser.parse(data)
+        JSONParser.parse(data)
     }
 
     benchmark(testCount, "fastjson") {

@@ -7,7 +7,7 @@ import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.setting.JSONSettings
-import com.github.cao.awa.cason.writer.JSONWriter
+import com.github.cao.awa.cason.serialize.writer.JSONWriter
 import kotlin.collections.component1
 import kotlin.collections.component2
 

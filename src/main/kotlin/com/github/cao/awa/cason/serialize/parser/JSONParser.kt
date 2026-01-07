@@ -1,4 +1,4 @@
-package com.github.cao.awa.cason.parser
+package com.github.cao.awa.cason.serialize.parser
 
 import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
