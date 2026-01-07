@@ -31,20 +31,52 @@ object JSONParser {
         }
     }
 
-    fun CharReader.parseElement(): JSONElement {
+    private fun CharReader.ensureAvailable(n: Int = 1) {
+        if (this.index + (n - 1) >= this.end) {
+            if (this.isFinal) {
+                error("Unexpected EOF")
+            }
+            throw NeedMoreInputException(this)
+        }
+    }
+
+    private fun CharReader.peekChar(): Char? =
+        if (this.index < end) this.chars[this.index] else null
+
+    private fun CharReader.peek2Char(): Char? =
+        if (this.index + 1 < end) this.chars[this.index + 1] else null
+
+    private fun CharReader.readCharNoLine(): Char {
+        // Fast path: for structural / number / identifier scanning (no line terminators expected).
+        ensureAvailable(1)
+        val c = this.chars[this.index++]
+        this.col++
+        return c
+    }
+
+    private fun CharReader.expectChar(ch: Char) {
+        ensureAvailable(1)
+        val got = readCharNoLine()
+        if (got != ch) {
+            error("Expected '$ch' but got '$got'")
+        }
+    }
+
+    private fun CharReader.parseElement(): JSONElement {
         skipWsAndCommentsFast()
-        val c = peek() ?: run {
+        val index = this.index
+        if (index >= this.end) {
             if (this.isFinal) {
                 error("Expected a value but got EOF")
             }
             throw NeedMoreInputException(this)
         }
-        return when (c) {
+        return when (this.chars[index]) {
             '{' -> parseObject()
             '[' -> parseArray()
-            '"', '\'' -> JSONString(parseStringFast())
-            '+', '-', '.', in '0'..'9' -> JSONNumber(parseNumberFast())
-            else -> parseIdentifierValueOrError(c)
+            '"', '\'' -> JSONString(parseString())
+            '+', '-', '.', in '0'..'9' -> JSONNumber(parseNumber())
+            else -> parseIdentifierValueOrError(this.chars[index])
         }
     }
 
@@ -63,114 +95,175 @@ object JSONParser {
     }
 
     private fun CharReader.parseObject(): JSONObject {
-        expect('{')
+        expectChar('{')
         skipWsAndCommentsFast()
-        val map = LinkedHashMap<String, JSONElement>(16)
 
-        if (peek() == '}') {
-            next()
+        val map = LinkedHashMap<String, JSONElement>(32)
+
+        if (peekChar() == '}') {
+            readCharNoLine()
             return JSONObject(map)
         }
 
         while (true) {
-            val key = parseObjectKey()
+            val key = parseObjectKeyFast()
             skipWsAndCommentsFast()
-            expect(':')
+            // ':' is structural, no line break expected.
+            expectChar(':')
             val value = parseElement()
             map[key] = value
             skipWsAndCommentsFast()
 
-            when (peek()) {
+            when (peekChar()) {
                 ',' -> {
-                    next(); skipWsAndCommentsFast()
+                    readCharNoLine()
+                    skipWsAndCommentsFast()
                 }
-
                 '}' -> {
-                    next(); break
+                    readCharNoLine()
+                    break
                 }
-
                 else -> error("Expected ',' or '}' in object")
             }
         }
+
         return JSONObject(map)
     }
 
-    private fun CharReader.parseObjectKey(): String {
+    private fun CharReader.parseObjectKeyFast(): String {
         skipWsAndCommentsFast()
-        val c = peek() ?: error("Unexpected EOF in object key")
+        val index = this.index
+        if (index >= this.end) {
+            error("Unexpected EOF in object key")
+        }
+        val c = this.chars[index]
         return when {
-            c == '"' || c == '\'' -> parseStringFast()
-            c == '+' || c == '-' || c == '.' || c.isDigit() -> parseNumberFast().toString()
+            c == '"' || c == '\'' -> parseString()
+            c == '+' || c == '-' || c == '.' || c.isDigit() -> parseNumber().toString()
             CasonUtil.isIdStart(c) -> parseIdentifierFast()
             else -> error("Invalid object key start '$c'")
         }
     }
 
     private fun CharReader.parseArray(): JSONArray {
-        expect('[')
+        expectChar('[')
         skipWsAndCommentsFast()
-        val list = ArrayList<JSONElement>(16)
 
-        if (peek() == ']') {
-            next()
+        val list = ArrayList<JSONElement>(32)
+
+        if (peekChar() == ']') {
+            readCharNoLine()
             return JSONArray(list)
         }
 
         while (true) {
             list.add(parseElement())
             skipWsAndCommentsFast()
-            when (peek()) {
+
+            when (peekChar()) {
                 ',' -> {
-                    next()
+                    readCharNoLine()
                     skipWsAndCommentsFast()
                 }
-
                 ']' -> {
-                    next()
+                    readCharNoLine()
                     break
                 }
-
                 else -> error("Expected ',' or ']' in array")
             }
         }
+
         return JSONArray(list)
     }
 
     fun CharReader.skipWsAndCommentsFast() {
-        val chars = this.chars
-        var i = this.index
-        val end = this.end
+        val a = chars
+        var i = index
+        val e = end
+
+        var line = this.line
+        var col = this.col
+
+        fun stepLineTerminatorAt(pos: Int): Int {
+            val ch = a[pos]
+            return when (ch) {
+                '\n', '\u2028', '\u2029' -> {
+                    line++
+                    col = 1
+                    pos + 1
+                }
+                '\r' -> {
+                    // Treat \r\n as one line break when possible.
+                    if (pos + 1 < e && a[pos + 1] == '\n') {
+                        line++
+                        col = 1
+                        pos + 2
+                    } else {
+                        if (pos + 1 >= e && !this.isFinal) throw NeedMoreInputException(this)
+                        line++
+                        col = 1
+                        pos + 1
+                    }
+                }
+                else -> {
+                    // Not a terminator.
+                    col++
+                    pos + 1
+                }
+            }
+        }
 
         while (true) {
-            // Whitespace.
-            while (i < end && (CasonUtil.isWs(chars[i]) || CasonUtil.isLineTerminator(chars[i]))) {
-                i++
+            // Skip whitespace or line terminators.
+            while (i < e) {
+                val c = a[i]
+                if (CasonUtil.isWs(c)) {
+                    i++
+                    col++
+                    continue
+                }
+                if (CasonUtil.isLineTerminator(c)) {
+                    i = stepLineTerminatorAt(i)
+                    continue
+                }
+                break
             }
 
-            // Comment '//'.
-            if (i + 1 < end && chars[i] == '/' && chars[i + 1] == '/') {
+            // Line comment '//' .
+            if (i + 1 < e && a[i] == '/' && a[i + 1] == '/') {
                 i += 2
-                while (i < end && !CasonUtil.isLineTerminator(chars[i])) {
+                col += 2
+                while (i < e && !CasonUtil.isLineTerminator(a[i])) {
                     i++
+                    col++
                 }
+                // Do not consume line terminator here, loop will handle it.
                 continue
             }
 
-            // Comment '/*'.
-            if (i + 1 < end && chars[i] == '/' && chars[i + 1] == '*') {
+            // Block comment '/* ... */' .
+            if (i + 1 < e && a[i] == '/' && a[i + 1] == '*') {
                 i += 2
+                col += 2
                 while (true) {
-                    if (i + 1 >= end) {
+                    if (i + 1 >= e) {
                         if (this.isFinal) {
                             error("Unterminated block comment")
                         }
                         throw NeedMoreInputException(this)
                     }
-                    if (chars[i] == '*' && chars[i + 1] == '/') {
+                    val commentChar = a[i]
+                    if (commentChar == '*' && a[i + 1] == '/') {
                         i += 2
+                        col += 2
                         break
                     }
-                    i++
+                    if (CasonUtil.isLineTerminator(commentChar)) {
+                        i = stepLineTerminatorAt(i)
+                    } else {
+                        i++
+                        col++
+                    }
                 }
                 continue
             }
@@ -178,48 +271,63 @@ object JSONParser {
             break
         }
 
-        this.col += (i - this.index)
         this.index = i
+        this.line = line
+        this.col = col
     }
 
-    private fun CharReader.parseStringFast(): String {
-        val quote = next()!!
-        val chars = this.chars
+    private fun CharReader.parseString(): String {
+        ensureAvailable(1)
+        val quote = this.chars[this.index]
+        // consume quote
+        this.index++
+        this.col++
+
+        val a = this.chars
         val start = this.index
         var i = start
+        val e = this.end
 
+        // Fast scan: no escapes, no line terminators.
         while (true) {
-            if (i >= this.end) {
+            if (i >= e) {
                 if (this.isFinal) error("Unterminated string")
                 throw NeedMoreInputException(this)
             }
-            val c = chars[i]
+            val c = a[i]
             if (c == quote) {
+                // Commit index.
                 this.index = i + 1
-                this.col += (this.index - start) + 1
-                return String(chars, start, i - start)
+                this.col += (i - start) + 1
+                return String(a, start, i - start)
             }
-            if (c == '\\') {
-                break
-            }
-            if (c == '\n' || c == '\r') {
+            if (c == '\\') break
+            if (c == '\n' || c == '\r' || c == '\u2028' || c == '\u2029') {
                 error("Unescaped line terminator in string")
             }
             i++
         }
 
-        val sb = StringBuilder(i - start + 16)
-        sb.appendRange(chars, start, start + (i - start))
+        // Slow path: has escape.
+        val builder = StringBuilder((i - start) + 16)
+        builder.appendRange(a, start, i)
+        // Move reader to the backslash.
+        this.col += (i - start)
         this.index = i
 
         while (true) {
-            val c = next() ?: error("Unterminated string")
+            ensureAvailable(1)
+            val c = this.chars[this.index++]
+            this.col++
+
             when (c) {
-                quote -> return sb.toString()
+                quote -> return builder.toString()
                 '\\' -> {
-                    val e = next() ?: error("Unterminated escape")
-                    sb.append(
-                        when (e) {
+                    ensureAvailable(1)
+                    val escapeChar = this.chars[this.index++]
+                    this.col++
+                    builder.append(
+                        when (escapeChar) {
                             'n' -> '\n'
                             'r' -> '\r'
                             't' -> '\t'
@@ -228,22 +336,31 @@ object JSONParser {
                             '"' -> '"'
                             '\'' -> '\''
                             '\\' -> '\\'
-                            else -> error("Unknown escape \\$e")
+                            else -> error("Unknown escape \\$escapeChar")
                         }
                     )
                 }
-
-                else -> sb.append(c)
+                '\n', '\r', '\u2028', '\u2029' -> error("Unescaped line terminator in string")
+                else -> builder.append(c)
             }
         }
     }
 
-    private fun CharReader.parseNumberFast(): CasonNumber {
+    private fun CharReader.parseNumber(): CasonNumber {
         var sign = 1
-        val c = peek()!!
+        ensureAvailable(1)
+        val c = this.chars[this.index]
+
         if (c == '+' || c == '-') {
             sign = if (c == '-') -1 else 1
-            next()
+            this.index++
+            this.col++
+            if (this.index >= this.end) {
+                if (this.isFinal) {
+                    error("Invalid number")
+                }
+                throw NeedMoreInputException(this)
+            }
         }
 
         var mantissa = 0L
@@ -251,53 +368,91 @@ object JSONParser {
         var exp10 = 0
         var overflow = false
 
-        fun addDigit(d: Int) {
+        val a = chars
+        val e = end
+
+        // Integer part.
+        while (this.index < e) {
+            val ch = a[this.index]
+            if (ch !in '0'..'9') {
+                break
+            }
+            val d = ch.code - 48
             if (!overflow) {
                 val n = mantissa * 10 + d
-                if (n < mantissa) {
-                    overflow = true
-                } else {
-                    mantissa = n
-                }
+                if (n < mantissa) overflow = true else mantissa = n
             }
             mantissaDigits++
+            this.index++
+            this.col++
         }
 
-        while (peek()?.isDigit() == true) {
-            addDigit(next()!! - '0')
-        }
-
-        if (peek() == '.') {
-            next()
-            while (peek()?.isDigit() == true) {
-                addDigit(next()!! - '0')
+        // Fraction.
+        if (this.index < e && a[this.index] == '.') {
+            this.index++
+            this.col++
+            while (this.index < e) {
+                val ch = a[this.index]
+                if (ch !in '0'..'9') {
+                    break
+                }
+                val d = ch.code - 48
+                if (!overflow) {
+                    val n = mantissa * 10 + d
+                    if (n < mantissa) overflow = true else mantissa = n
+                }
+                mantissaDigits++
                 exp10--
+                this.index++
+                this.col++
             }
         }
 
-        if (mantissaDigits == 0) error("Invalid number")
-
-        if (peek() == 'e' || peek() == 'E') {
-            next()
-            var expSign = 1
-            if (peek() == '+' || peek() == '-') {
-                expSign = if (next() == '-') -1 else 1
-            }
-            var exp = 0
-            while (peek()?.isDigit() == true) {
-                exp = exp * 10 + (next()!! - '0')
-            }
-            exp10 += expSign * exp
+        if (mantissaDigits == 0) {
+            error("Invalid number")
         }
 
-        val bd = if (!overflow && mantissaDigits <= 18) {
+        // Exponent.
+        if (this.index < e) {
+            val ch = a[this.index]
+            if (ch == 'e' || ch == 'E') {
+                this.index++
+                this.col++
+
+                ensureAvailable(1)
+                var expSign = 1
+                if (this.index < e) {
+                    val s = a[this.index]
+                    if (s == '+' || s == '-') {
+                        expSign = if (s == '-') -1 else 1
+                        this.index++
+                        this.col++
+                    }
+                }
+
+                var exp = 0
+                var expDigits = 0
+                while (this.index < e) {
+                    val dch = a[this.index]
+                    if (dch !in '0'..'9') {
+                        break
+                    }
+                    exp = exp * 10 + (dch.code - 48)
+                    expDigits++
+                    this.index++
+                    this.col++
+                }
+                if (expDigits == 0) error("Invalid exponent in number")
+                exp10 += expSign * exp
+            }
+        }
+
+        val bd = if (!overflow && mantissaDigits <= 19) {
             BigDecimal.valueOf(sign * mantissa).scaleByPowerOfTen(exp10)
         } else {
             var bi = BigInteger.valueOf(mantissa)
-            bi = if (sign < 0) {
-                bi.negate()
-            } else {
-                bi
+            if (sign < 0) {
+                bi = bi.negate()
             }
             BigDecimal(bi).scaleByPowerOfTen(exp10)
         }
@@ -306,12 +461,24 @@ object JSONParser {
     }
 
     private fun CharReader.parseIdentifierFast(): String {
-        val chars = this.chars
+        val a = this.chars
         val start = this.index
-        next()
-        while (this.index < this.end && CasonUtil.isIdPart(chars[this.index])) {
-            next()
-        }
-        return String(chars, start, this.index - start)
+
+        // first char must exist and be idStart (caller checked)
+        ensureAvailable(1)
+        this.index++
+        this.col++
+
+        var i = this.index
+        val e = this.end
+        while (i < e && CasonUtil.isIdPart(a[i])) i++
+
+        // Commit index.
+        val len = i - start
+        val extra = i - this.index
+        this.index = i
+        this.col += extra
+
+        return String(a, start, len)
     }
 }

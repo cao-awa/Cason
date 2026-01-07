@@ -1,24 +1,20 @@
 package com.github.cao.awa.cason.reader
 
-import com.github.cao.awa.cason.exception.JSONParseException
 import com.github.cao.awa.cason.exception.NeedMoreInputException
+import com.github.cao.awa.cason.util.CasonUtil
 
 class CharReader(
     val chars: CharArray,
-    val start: Int,
+    var index: Int,
     val end: Int,
-    val isFinal: Boolean,
-    val baseIndex: Int = 0,
-    baseLine: Int = 1,
-    baseCol: Int = 1
+    val isFinal: Boolean
 ) {
-    var index: Int = start
-    var line: Int = baseLine
-    var col: Int = baseCol
+    var line: Int = 1
+    var col: Int = 1
 
     fun eof(): Boolean = this.index >= this.end
 
-    fun require(n: Int = 1) {
+    fun ensure(n: Int = 1) {
         if (this.index + (n - 1) >= this.end) {
             if (this.isFinal) {
                 error("Unexpected EOF")
@@ -27,26 +23,24 @@ class CharReader(
         }
     }
 
-    fun peek(): Char? = if (this.index < this.end) {
-        this.chars[this.index]
-    } else {
-        null
-    }
+    fun peek(): Char = this.chars[this.index]
 
-    fun peek2(): Char? = if (this.index + 1 < this.end) {
-        this.chars[this.index + 1]
-    } else {
-        null
-    }
-
-    fun next(): Char? {
-        if (index >= end) {
-            if (isFinal) return null
-            throw NeedMoreInputException(this)
-        }
-        val c = chars[index++]
-        advanceLineCol(c)
+    fun next(): Char {
+        val c = this.chars[this.index++]
+        this.col++
         return c
+    }
+
+    fun skip(n: Int) {
+        this.index += n
+        this.col += n
+    }
+
+    fun expect(ch: Char) {
+        ensure(1)
+        val c = this.chars[this.index++]
+        this.col++
+        if (c != ch) error("Expected '$ch' but got '$c'")
     }
 
     fun advanceLineCol(c: Char) {
@@ -56,11 +50,9 @@ class CharReader(
                 this.col = 1
             }
             '\r' -> {
-                // \r\n treat as single line break.
-                if (this.index < this.end) {
-                    if (this.chars[this.index] == '\n') this.index++
-                } else if (!this.isFinal) {
-                    // Chunk ends after \r, need more to see if next is \n .
+                if (this.index < this.end && this.chars[this.index] == '\n') {
+                    this.index++
+                } else if (this.index >= this.end && !this.isFinal) {
                     throw NeedMoreInputException(this)
                 }
                 this.line++
@@ -70,21 +62,18 @@ class CharReader(
         }
     }
 
-    fun expect(ch: Char) {
-        require(1)
-        val got = next() ?: error("Expected '$ch' but got EOF")
-        if (got != ch) {
-            error("Expected '$ch' but got '$got'")
-        }
+    fun error(msg: String): Nothing {
+        throw IllegalArgumentException("$msg at line $this.line, column $this.col")
     }
 
-    fun error(msg: String): Nothing {
-        val abs = this.baseIndex + (this.index - this.start)
-        val aroundStart = maxOf(this.start, this.index - 20)
-        val aroundEnd = minOf(this.end, this.index + 20)
-        val excerpt = String(this.chars, aroundStart, aroundEnd - aroundStart).replace("\n", "\\n")
-        throw JSONParseException(
-            "JSON5 Parse Error @ line ${this.line}, col ${this.col}, index $abs: $msg. Around: \"$excerpt\""
-        )
+    fun skipWs() {
+        while (true) {
+            val c = peek()
+            if (CasonUtil.isWs(c) || CasonUtil.isLineTerminator(c)) {
+                next()
+            } else {
+                return
+            }
+        }
     }
 }
