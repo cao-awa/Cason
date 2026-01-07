@@ -75,16 +75,16 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
 
     fun isPresent(key: String): Boolean = this.map.containsKey(key)
 
-    fun compute(key: String, back: (JSONArray?) -> JSONArray): JSONObject = put(key, back(getArray(key)))
-    fun compute(key: String, back: (JSONObject?) -> JSONObject): JSONObject = put(key, back(getJSON(key)))
-    fun compute(key: String, back: (String?) -> String): JSONObject = put(key, back(getString(key)))
-    fun compute(key: String, back: (Boolean?) -> Boolean): JSONObject = put(key, back(getBoolean(key)))
-    fun compute(key: String, back: (Byte?) -> Byte): JSONObject = put(key, back(getByte(key)))
-    fun compute(key: String, back: (Short?) -> Short): JSONObject = put(key, back(getShort(key)))
-    fun compute(key: String, back: (Int?) -> Int): JSONObject = put(key, back(getInt(key)))
-    fun compute(key: String, back: (Long?) -> Long): JSONObject = put(key, back(getLong(key)))
-    fun compute(key: String, back: (Float?) -> Float): JSONObject = put(key, back(getFloat(key)))
-    fun compute(key: String, back: (Double?) -> Double): JSONObject = put(key, back(getDouble(key)))
+    fun computeArray(key: String, back: (JSONArray?) -> JSONArray): JSONObject = put(key, back(getArray(key)))
+    fun computeJSON(key: String, back: (JSONObject?) -> JSONObject): JSONObject = put(key, back(getJSON(key)))
+    fun computeString(key: String, back: (String?) -> String): JSONObject = put(key, back(getString(key)))
+    fun computeBoolean(key: String, back: (Boolean?) -> Boolean): JSONObject = put(key, back(getBoolean(key)))
+    fun computeByte(key: String, back: (Byte?) -> Byte): JSONObject = put(key, back(getByte(key)))
+    fun computeShort(key: String, back: (Short?) -> Short): JSONObject = put(key, back(getShort(key)))
+    fun computeInt(key: String, back: (Int?) -> Int): JSONObject = put(key, back(getInt(key)))
+    fun computeLong(key: String, back: (Long?) -> Long): JSONObject = put(key, back(getLong(key)))
+    fun computeFloat(key: String, back: (Float?) -> Float): JSONObject = put(key, back(getFloat(key)))
+    fun computeDouble(key: String, back: (Double?) -> Double): JSONObject = put(key, back(getDouble(key)))
 
     fun forEach(action: (MutableMap.MutableEntry<String, JSONElement>)-> Unit) {
         for (entry in this.map) {

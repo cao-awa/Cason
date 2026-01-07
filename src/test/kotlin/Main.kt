@@ -24,6 +24,9 @@ fun dsl() {
             "test-awa" set "awa"
             "test-number" set 1234567
         }
+        computeInt("test-compute") {
+            123 + (it ?:0)
+        }
     }
 
     println(JSONWriter.stringify(json, pretty = true).also {
