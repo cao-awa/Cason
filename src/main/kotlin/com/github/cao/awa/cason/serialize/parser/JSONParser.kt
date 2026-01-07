@@ -91,7 +91,7 @@ object JSONParser {
         expectChar('{')
         skipWsAndComments()
 
-        val map = LinkedHashMap<String, JSONElement>(32)
+        val map = LinkedHashMap<String, JSONElement>(24)
 
         if (peekChar() == '}') {
             readCharNoLine()
@@ -142,7 +142,7 @@ object JSONParser {
         expectChar('[')
         skipWsAndComments()
 
-        val list = ArrayList<JSONElement>(32)
+        val list = ArrayList<JSONElement>(24)
 
         if (peekChar() == ']') {
             readCharNoLine()
@@ -313,7 +313,8 @@ object JSONParser {
         }
 
         // Slow path: escape or invalid content exists.
-        var result = String(chars, start, index)
+        val builder = StringBuilder((index - start) + 16)
+        builder.appendRange(chars, start, index)
 
         // Commit reader to first backslash.
         this.col += (index - start)
@@ -335,7 +336,7 @@ object JSONParser {
                 quote -> {
                     this.index = idx
                     this.col = col
-                    return result
+                    return builder.toString()
                 }
 
                 '\\' -> {
@@ -345,17 +346,19 @@ object JSONParser {
                     }
                     val esc = chars[idx++]
                     col++
-                    result += (when (esc) {
-                        'n' -> '\n'
-                        'r' -> '\r'
-                        't' -> '\t'
-                        'b' -> '\b'
-                        'f' -> '\u000C'
-                        '"' -> '"'
-                        '\'' -> '\''
-                        '\\' -> '\\'
-                        else -> error("Unknown escape \\$esc")
-                    })
+                    builder.append(
+                        when (esc) {
+                            'n' -> '\n'
+                            'r' -> '\r'
+                            't' -> '\t'
+                            'b' -> '\b'
+                            'f' -> '\u000C'
+                            '"' -> '"'
+                            '\'' -> '\''
+                            '\\' -> '\\'
+                            else -> error("Unknown escape \\$esc")
+                        }
+                    )
                 }
 
                 // Line terminators are illegal unless escaped
@@ -368,7 +371,7 @@ object JSONParser {
                     error("Unescaped line terminator in string")
                 }
 
-                else -> result + c
+                else -> builder.append(c)
             }
         }
     }
