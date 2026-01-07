@@ -99,7 +99,7 @@ fun parsing() {
 
 fun benchmark(count: Int, sampleName: String, action: () -> Unit) {
     // Pre test.
-    for (i in 0 until 5000) {
+    for (i in 0 until 10000) {
         action()
     }
 
