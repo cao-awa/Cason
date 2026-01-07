@@ -19,7 +19,65 @@ Cason is optimized for real-world usage scenarios:
 - **vs fastjson2**: Slightly slower for pure throughput but more memory efficient
 - **JSON5**: Competitive parsing speed with excellent error recovery
 
-Benchmarks parsing a 15000 elements object, repeat 10000 times to widen the performance gap. For most applications, Cason provides an excellent balance of speed, features, and maintainability.
+Benchmarks parsing a small elements object, repeat 10000 times to widen the performance gap. For most applications, Cason provides an excellent balance of speed, features, and maintainability.
+
+<details>
+
+<summary>Benchmark case</summary>
+
+### Test data
+
+```json
+{
+  "schema_style": "conium",
+  "identifier": "conium:sample",
+  "templates": {
+    "armor": {
+      "slot": "helmet",
+      "defense": 2,
+      "toughness": 2,
+      "knockback_resistance": 2,
+      "enchantable": 2
+    },
+    "netherite_axe": {},
+    "can_destroy_in_creative": true,
+    "clear_ignite": true,
+    "consumable": {
+      "convert_to": "minecraft:apple",
+      "apply_effect": "minecraft:regeneration"
+    },
+    "consume_on_used": {
+      "used_on_block": "minecraft:bedrock",
+      "used_on_entity": "minecraft:pig",
+      "consume": true
+    },
+    "entity_placer": {
+      "entity": "minecraft:pig",
+      "allowed_block": "minecraft:bedrock"
+    },
+    "food": {
+      "nutrition": 10,
+      "saturation": 10,
+      "can_always_eat": true
+    },
+    "force_mining_speed": 8,
+    "fuel": 100,
+    "glint": true,
+    "ignite": true,
+    "rarity": "epic",
+    "spawn_egg": "minecraft:creeper",
+    "max_count": 64,
+    "use_action": "eat"
+  }
+}
+```
+
+### Test result (parsing speed)
+* **Cason**: 291ms
+* **fastjson2**: 137ms
+* **org.json**: 757ms
+
+</details>
 
 ## Installation
 Cason can be installed from GitHub Packages by adding the following repository:
