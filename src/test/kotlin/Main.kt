@@ -5,6 +5,8 @@ import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.writer.JSONWriter
 
 fun main() {
+    parsing()
+
     dsl()
 }
 
@@ -30,7 +32,7 @@ fun dsl() {
     }
 
     println(JSONWriter.stringify(json, pretty = true).also {
-        println((JSONParser.parse(it) as JSONObject).getArray("keywords")?.getString(0))
+        println((JSONParser.parse(it) as JSONObject).getString("name"))
     })
 }
 

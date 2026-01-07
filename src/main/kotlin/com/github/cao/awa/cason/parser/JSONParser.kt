@@ -2,94 +2,119 @@ package com.github.cao.awa.cason.parser
 
 import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
-import com.github.cao.awa.cason.exception.JSONParseException
+import com.github.cao.awa.cason.exception.NeedMoreInputException
 import com.github.cao.awa.cason.number.CasonNumber
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
-import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.reader.CharReader
-import com.github.cao.awa.cason.serialize.JSONSerializeVersion
 import com.github.cao.awa.cason.util.CasonUtil
-import com.github.cao.awa.cason.util.CasonUtil.isHexDigit
-import com.github.cao.awa.cason.util.CasonUtil.parseIdentifier
 import java.math.BigDecimal
 import java.math.BigInteger
-import kotlin.text.iterator
 
 object JSONParser {
     fun parseObject(input: String): JSONObject = parse(input) as JSONObject
-
     fun parseArray(input: String): JSONArray = parse(input) as JSONArray
 
     fun parse(input: String): JSONElement {
-        val reader = CharReader(input)
+        val chars = input.toCharArray()
+        val reader = CharReader(
+            chars = chars,
+            start = 0,
+            end = chars.size,
+            isFinal = true
+        )
         val element = reader.parseElement()
         reader.skipWsAndComments()
-        if (reader.eof()) {
-            return element
+        if (!reader.eof()) {
+            reader.error("Trailing characters after top-level value")
         }
-        reader.error("Trailing characters after top-level value")
+        return element
     }
 
-    private fun CharReader.error(msg: String): Nothing {
-        val start = maxOf(0, this.index - 20)
-        val end = minOf(this.string.length, this.index + 20)
-        val excerpt = this.string.substring(start, end).replace("\n", "\\n")
-        throw JSONParseException("JSON5 Parse Error @ line ${this.line}, col ${this.col}, index ${this.index}: $msg. Around: \"$excerpt\"")
+    // Value type dispatch table for ASCII.
+    // 0=other, 1=obj, 2=arr, 3=str, 4=num .
+    private val VALUE_TYPE = ByteArray(128).apply {
+        this['{'.code] = 1
+        this['['.code] = 2
+        this['"'.code] = 3
+        this['\''.code] = 3
+        this['+'.code] = 4
+        this['-'.code] = 4
+        this['.'.code] = 4
+        for (c in '0'.code..'9'.code) this[c] = 4
     }
 
-    private fun CharReader.parseElement(): JSONElement {
+    // ASCII identifier char classes to reduce calls into util for common cases.
+    private val ASCII_ID_START = BooleanArray(128).apply {
+        // JS IdentifierStart includes $, _, letters. (We keep it conservative and defer to util for non-ascii).
+        this['_'.code] = true
+        this['$'.code] = true
+        for (c in 'A'.code..'Z'.code) this[c] = true
+        for (c in 'a'.code..'z'.code) this[c] = true
+    }
+    private val ASCII_ID_PART = BooleanArray(128).apply {
+        for (i in ASCII_ID_START.indices) this[i] = ASCII_ID_START[i]
+        for (c in '0'.code..'9'.code) this[c] = true
+    }
+
+    fun CharReader.parseElement(): JSONElement {
         skipWsAndComments()
-        val c = peek() ?: error("Expected a value but got EOF")
+        val c = peek() ?: run {
+            if (this.isFinal) {
+                error("Expected a value but got EOF")
+            }
+            throw NeedMoreInputException(this)
+        }
 
-        return when (c) {
-            '{' -> parseObject()
-            '[' -> parseArray()
-            '\'', '"' -> JSONString(parseString())
-            '+', '-', '.', in '0'..'9' -> JSONNumber(parseNumber())
-            else -> {
-                if (CasonUtil.isIdStart(c)) {
-                    when (val id = parseIdentifier()) {
-                        "null" -> JSONNull
-                        "true" -> JSONBoolean(true)
-                        "false" -> JSONBoolean(false)
-                        "Infinity" -> JSONNumber(CasonNumber.posInf())
-                        "NaN" -> JSONNumber(CasonNumber.nan())
-                        else -> error("Unexpected identifier '$id' (JSON5 only allows identifiers as object keys, not as bare values)")
-                    }
-                } else {
-                    error("Unexpected character '$c'")
-                }
+        val t = if (c.code < 128) VALUE_TYPE[c.code].toInt() else 0
+        return when (t) {
+            1 -> parseObject()
+            2 -> parseArray()
+            3 -> JSONString(parseString())
+            4 -> JSONNumber(parseNumber())
+            else -> parseIdentifierValueOrError(c)
+        }
+    }
+
+    private fun CharReader.parseIdentifierValueOrError(c: Char): JSONElement {
+        if (isIdStart(c)) {
+            return when (val id = parseIdentifierFast()) {
+                "null" -> JSONNull
+                "true" -> JSONBoolean(true)
+                "false" -> JSONBoolean(false)
+                "Infinity" -> JSONNumber(CasonNumber.posInf())
+                "NaN" -> JSONNumber(CasonNumber.nan())
+                else -> error("Unexpected identifier '$id'")
             }
         }
+        error("Unexpected character '$c'")
     }
 
     private fun CharReader.parseObject(): JSONObject {
         expect('{')
         skipWsAndComments()
-        val map = LinkedHashMap<String, JSONElement>()
+
+        val map = LinkedHashMap<String, JSONElement>(8)
         if (peek() == '}') {
             next()
             return JSONObject(map)
         }
 
         while (true) {
-            skipWsAndComments()
             val key = parseObjectKey()
             skipWsAndComments()
             expect(':')
-            val element = parseElement()
-            map[key] = element
+            val value = parseElement()
+            map[key] = value
             skipWsAndComments()
 
             when (peek()) {
                 ',' -> {
                     next()
                     skipWsAndComments()
-                    // trailing comma allowed.
                     if (peek() == '}') {
                         next()
                         break
@@ -109,49 +134,47 @@ object JSONParser {
 
     private fun CharReader.parseObjectKey(): String {
         skipWsAndComments()
-        val c = peek() ?: error("Expected object key but got EOF")
-        return if (c == '\'' || c == '"') {
-            parseString()
-        } else if (c == '+' || c == '-' || c == '.' || c in '0'..'9') {
-            // Numeric key literal like {1: "a"} is valid in JS object literal style.
-            parseNumber().toString()
-        } else {
-            if (CasonUtil.isIdStart(c)) {
-                // In key position, allow keywords too.
-                when (val id = parseIdentifier()) {
-                    "null", "true", "false", "Infinity", "NaN" -> id
-                    else -> id
-                }
-            } else {
-                error("Invalid object key start '$c'")
+        val c = peek() ?: run {
+            if (this.isFinal) {
+                error("Expected object key but got EOF")
             }
+            throw NeedMoreInputException(this)
+        }
+
+        return when {
+            c == '"' || c == '\'' -> parseString()
+            c == '+' || c == '-' || c == '.' || c.isDigit() -> parseNumber().toString()
+            isIdStart(c) -> parseIdentifierFast()
+            else -> error("Invalid object key start '$c'")
         }
     }
 
     private fun CharReader.parseArray(): JSONArray {
         expect('[')
         skipWsAndComments()
-        val list = ArrayList<JSONElement>()
+
+        val list = ArrayList<JSONElement>(8)
         if (peek() == ']') {
-            next(); return JSONArray(list)
+            next()
+            return JSONArray(list)
         }
 
         while (true) {
-            val v = parseElement()
-            list.add(v)
+            list.add(parseElement())
             skipWsAndComments()
             when (peek()) {
                 ',' -> {
                     next()
                     skipWsAndComments()
-                    // trailing comma allowed
                     if (peek() == ']') {
-                        next(); break
+                        next()
+                        break
                     }
                 }
 
                 ']' -> {
-                    next(); break
+                    next()
+                    break
                 }
 
                 else -> error("Expected ',' or ']' in array")
@@ -161,153 +184,208 @@ object JSONParser {
     }
 
     private fun CharReader.parseString(): String {
-        val quote = next() ?: error("Expected quote but got EOF")
+        val quote = next() ?: run {
+            if (this.isFinal) {
+                error("Expected quote but got EOF")
+            }
+            throw NeedMoreInputException(this)
+        }
         if (quote != '"' && quote != '\'') {
             error("Internal: parseString called at non-quote")
         }
 
-        val builder = StringBuilder()
+        val contentStart = index
+        var builder: StringBuilder? = null
+
         while (true) {
-            val c = next() ?: error("Unterminated string")
-            if (c == quote) {
-                return builder.toString()
+            if (this.index >= this.end) {
+                if (this.isFinal) {
+                    error("Unterminated string")
+                }
+                throw NeedMoreInputException(this)
             }
 
-            if (c == '\\') {
-                val n = peek() ?: error("Unterminated escape")
-                // Line continuation: backslash + line terminator => skip both
-                if (CasonUtil.isLineTerminator(n)) {
-                    consumeLineTerminator()
-                    continue
+            val c = this.chars[this.index]
+
+            if (c == quote) {
+                this.index++
+                this.col++
+                return builder?.toString() ?: String(this.chars, contentStart, (this.index - 1) - contentStart)
+            }
+
+            // Raw line terminator not allowed.
+            if (c == '\n' || c == '\r' || c == '\u2028' || c == '\u2029') {
+                error("Unescaped line terminator in string")
+            }
+
+            if (c != '\\') {
+                builder?.append(c)
+                this.index++
+                this.col++
+                continue
+            }
+
+            // Escape.
+            require(2)
+            if (builder == null) {
+                builder = StringBuilder(16 + (this.index - contentStart))
+                builder.appendRange(this.chars, contentStart, contentStart + (this.index - contentStart))
+            }
+
+            // Consume backslash.
+            this.index++
+            this.col++
+
+            val esc = next() ?: run {
+                if (this.isFinal) {
+                    error("Unterminated escape")
                 }
-                val esc = next() ?: error("Unterminated escape")
-                when (esc) {
-                    '\\' -> builder.append('\\')
-                    '/' -> builder.append('/')
-                    '\'' -> builder.append('\'')
-                    '"' -> builder.append('"')
-                    'b' -> builder.append('\b')
-                    'f' -> builder.append('\u000C')
-                    'n' -> builder.append('\n')
-                    'r' -> builder.append('\r')
-                    't' -> builder.append('\t')
-                    'v' -> builder.append('\u000B')
-                    '0' -> {
-                        // JSON5: \0 allowed if not followed by digit
-                        val p = peek()
-                        if (p != null && p.isDigit()) {
-                            error("Invalid escape \\0 followed by digit")
-                        }
-                        builder.append('\u0000')
+                throw NeedMoreInputException(this)
+            }
+
+            // Line continuation: "\" + line terminator => skip terminator.
+            if (CasonUtil.isLineTerminator(esc)) {
+                continue
+            }
+
+            when (esc) {
+                '\\' -> builder.append('\\')
+                '/' -> builder.append('/')
+                '\'' -> builder.append('\'')
+                '"' -> builder.append('"')
+                'b' -> builder.append('\b')
+                'f' -> builder.append('\u000C')
+                'n' -> builder.append('\n')
+                'r' -> builder.append('\r')
+                't' -> builder.append('\t')
+                'v' -> builder.append('\u000B')
+                '0' -> {
+                    if (peek()?.isDigit() == true) {
+                        error("Invalid escape \\0 followed by digit")
                     }
-                    'x' -> {
-                        val h1 = next() ?: error("Invalid \\x escape")
-                        val h2 = next() ?: error("Invalid \\x escape")
-                        val code = CasonUtil.hexVal(h1) * 16 + CasonUtil.hexVal(h2)
-                        if (code < 0) {
-                            error("Invalid hex in \\x escape")
+                    builder.append('\u0000')
+                }
+                'x' -> {
+                    require(2)
+                    val h1 = next() ?: error("Invalid \\x escape")
+                    val h2 = next() ?: error("Invalid \\x escape")
+                    val v1 = CasonUtil.hexVal(h1)
+                    val v2 = CasonUtil.hexVal(h2)
+                    if (v1 < 0 || v2 < 0) {
+                        error("Invalid hex in \\x escape")
+                    }
+                    builder.append(((v1 shl 4) + v2).toChar())
+                }
+                'u' -> {
+                    if (peek() == '{') {
+                        next() // Consume ‘{’ .
+                        var cp = 0
+                        var saw = false
+                        while (true) {
+                            val ch = next() ?: run {
+                                if (this.isFinal) {
+                                    error("Unterminated \\u{...} escape")
+                                }
+                                throw NeedMoreInputException(this)
+                            }
+                            if (ch == '}') {
+                                break
+                            }
+                            val hv = CasonUtil.hexVal(ch)
+                            if (hv < 0) {
+                                error("Invalid hex digit in \\u{...}: '$ch'")
+                            }
+                            cp = (cp shl 4) + hv
+                            saw = true
+                        }
+                        if (!saw) {
+                            error("Empty \\u{...} escape")
+                        }
+                        builder.appendCodePoint(cp)
+                    } else {
+                        var code = 0
+                        repeat(4) {
+                            val ch = next() ?: run {
+                                if (this.isFinal) {
+                                    error("Invalid \\u escape")
+                                }
+                                throw NeedMoreInputException(this)
+                            }
+                            val hv = CasonUtil.hexVal(ch)
+                            if (hv < 0) {
+                                error("Invalid hex digit in \\u escape: '$ch'")
+                            }
+                            code = (code shl 4) + hv
                         }
                         builder.append(code.toChar())
                     }
-
-                    'u' -> {
-                        if (peek() == '{') {
-                            next() // consume {
-                            val hex = StringBuilder()
-                            while (true) {
-                                val ch = next() ?: error("Unterminated \\u{...} escape")
-                                if (ch == '}') {
-                                    break
-                                }
-                                if (!ch.isHexDigit()) {
-                                    error("Invalid hex digit in \\u{...}: '$ch'")
-                                }
-                                hex.append(ch)
-                            }
-                            if (hex.isEmpty()) {
-                                error("Empty \\u{...} escape")
-                            }
-                            val cp = hex.toString().toInt(16)
-                            builder.appendCodePoint(cp)
-                        } else {
-                            val h = CharArray(4) {
-                                next() ?: error("Invalid \\u escape")
-                            }
-                            val code = h.fold(0) { acc, ch ->
-                                val v = CasonUtil.hexVal(ch)
-                                if (v < 0) {
-                                    error("Invalid hex digit in \\u escape: '$ch'")
-                                }
-                                (acc shl 4) + v
-                            }
-                            builder.append(code.toChar())
-                        }
-                    }
-
-                    else -> {
-                        // JSON5 allows escaping of line separators? We'll treat unknown escapes as error.
-                        error("Unknown escape sequence: \\$esc")
-                    }
                 }
-            } else {
-                if (CasonUtil.isLineTerminator(c)) error("Unescaped line terminator in string")
-                builder.append(c)
+                else -> error("Unknown escape sequence: \\$esc")
             }
         }
     }
 
     private fun CharReader.parseNumber(): CasonNumber {
         skipWsAndComments()
-        val startIdx = index
+        val startIdx = this.index
 
-        // optional sign.
-        var sign: Char? = null
-        if (peek() == '+' || peek() == '-') sign = next()
+        // Optional sign.
+        var signChar: Char? = null
+        val p0 = peek()
+        if (p0 == '+' || p0 == '-') {
+            signChar = next()
+        }
 
-        // Infinity / NaN (with optional sign).
-        if (peekStartsWith("Infinity")) {
+        // Infinity/NaN (fast literal match).
+        if (matchLiteral("Infinity")) {
             consumeLiteral("Infinity")
-            return if (sign == '-') {
+            return if (signChar == '-') {
                 CasonNumber.negInf()
             } else {
                 CasonNumber.posInf()
             }
         }
-        if (peekStartsWith("NaN")) {
+        if (matchLiteral("NaN")) {
             consumeLiteral("NaN")
-            return CasonNumber.nan() // sign on NaN is allowed in JS, but semantically it's still NaN.
+            return CasonNumber.nan()
         }
 
         // Hex: 0x...
         if (peek() == '0' && (peek2() == 'x' || peek2() == 'X')) {
-            nextTwice() // consume 0x
-            val hex = StringBuilder()
+            require(2)
+            next()
+            next() // 0x
+            var saw = false
+            var bi = BigInteger.ZERO
             while (true) {
                 val ch = peek() ?: break
-                if (!ch.isHexDigit()) {
+                val hv = CasonUtil.hexVal(ch)
+                if (hv < 0) {
                     break
                 }
-                hex.append(next())
+                saw = true
+                bi = bi.shiftLeft(4).add(BigInteger.valueOf(hv.toLong()))
+                next()
             }
-            if (hex.isEmpty()) {
+            if (!saw) {
                 error("Invalid hex literal (no digits)")
             }
-            val bi = BigInteger(hex.toString(), 16)
             val bd = BigDecimal(bi)
-            return if (sign == '-') {
+            return if (signChar == '-') {
                 CasonNumber.finite(bd.negate())
             } else {
                 CasonNumber.finite(bd)
             }
         }
 
-        // Decimal / float / exponent .
-        val raw = StringBuilder()
-        if (sign != null) {
-            raw.append(sign)
-        }
+        val numStart = this.index
 
+        // Integer fast path (only if no '.' and no exp, and fits Long).
+        var intValue = 0L
         var sawDigit = false
+        var isInteger = true
+        var hasDot = false
+        var hasExp = false
 
         fun readDigits() {
             while (true) {
@@ -316,51 +394,90 @@ object JSONParser {
                     break
                 }
                 sawDigit = true
-                raw.append(next())
+                if (isInteger) {
+                    val d = ch.code - 48
+                    val n = intValue * 10 + d
+                    if (n < intValue) {
+                        isInteger = false
+                        next()
+                    } else {
+                        intValue = n
+                        next()
+                    }
+                } else {
+                    next()
+                }
             }
         }
 
         if (peek() == '.') {
-            raw.append(next())
-            readDigits()
+            hasDot = true
+            isInteger = false
+            next()
+            while (peek()?.isDigit() == true) {
+                sawDigit = true
+                next()
+            }
         } else {
             readDigits()
             if (peek() == '.') {
-                raw.append(next())
-                readDigits()
+                hasDot = true
+                isInteger = false
+                next()
+                while (peek()?.isDigit() == true) {
+                    sawDigit = true
+                    next()
+                }
             }
         }
 
         if (!sawDigit) {
-            // Rollback-ish message.
             error("Invalid number literal")
         }
 
-        // Exponent.
-        val p = peek()
-        if (p == 'e' || p == 'E') {
-            raw.append(next())
+        val pe = peek()
+        if (pe == 'e' || pe == 'E') {
+            hasExp = true
+            isInteger = false
+            next()
             val sgn = peek()
-            if (sgn == '+' || sgn == '-') raw.append(next())
-            val expStart = this.index
-            var expDigits = 0
-            while (true) {
-                val ch = peek() ?: break
-                if (!ch.isDigit()) {
-                    break
+            if (sgn == '+' || sgn == '-') next()
+            val firstExp = peek()
+            if (firstExp == null) {
+                if (this.isFinal) {
+                    error("Invalid exponent (no digits)")
                 }
-                raw.append(next())
-                expDigits++
+                throw NeedMoreInputException(this)
             }
-            if (expDigits == 0) {
-                resetIndex(expStart)
+            if (!firstExp.isDigit()) {
                 error("Invalid exponent (no digits)")
+            }
+            while (peek()?.isDigit() == true) {
+                next()
             }
         }
 
-        val lit = raw.toString()
+        val after = index
 
-        // BigDecimal doesn't always like ".5" in some JDKs; normalize to "0.5".
+        // Fast int result (no allocations).
+        if (isInteger && !hasDot && !hasExp) {
+            val signed = if (signChar == '-') {
+                -intValue
+            } else {
+                intValue
+            }
+            return CasonNumber.finite(BigDecimal.valueOf(signed))
+        }
+
+        // Slow path: single slice + BigDecimal(String).
+        val raw = String(chars, numStart, after - numStart)
+        val lit = if (signChar == null) {
+            raw
+        } else {
+            "$signChar$raw"
+        }
+
+        // Normalize ".5" / "+.5" / "-.5" .
         val normalized = if (lit.startsWith(".") || lit.startsWith("+.") || lit.startsWith("-.")) {
             lit.replaceFirst(".", "0.")
         } else {
@@ -370,45 +487,48 @@ object JSONParser {
         return try {
             CasonNumber.finite(BigDecimal(normalized))
         } catch (_: Exception) {
-            // Helpful context.
-            val around = this.string.substring(maxOf(0, startIdx), minOf(this.string.length, startIdx + 30))
+            val around = String(chars, startIdx, minOf(end - startIdx, 30))
             error("Invalid number literal '$lit' (around '$around')")
         }
     }
 
-    private fun CharReader.skipWsAndComments() {
+    fun CharReader.skipWsAndComments() {
         while (true) {
-            // whitespace.
             var moved = false
+
             while (true) {
                 val c = peek() ?: break
                 if (CasonUtil.isWs(c) || CasonUtil.isLineTerminator(c)) {
                     next()
                     moved = true
-                } else {
-                    break
-                }
+                } else break
             }
 
-            // comments.
+            // line comment //
             if (peek() == '/' && peek2() == '/') {
-                // line comment.
-                nextTwice()
+                require(2)
+                next()
+                next()
                 while (true) {
                     val c = peek() ?: break
-                    if (CasonUtil.isLineTerminator(c)) {
-                        break
-                    }
+                    if (CasonUtil.isLineTerminator(c)) break
                     next()
                 }
                 continue
             }
-            if (peek() == '/' && peek2() == '*') {
-                // block comment.
-                nextTwice()
 
+            // block comment /* ... */
+            if (peek() == '/' && peek2() == '*') {
+                require(2)
+                next()
+                next()
                 while (true) {
-                    val c = next() ?: error("Unterminated block comment")
+                    val c = next() ?: run {
+                        if (this.isFinal) {
+                            error("Unterminated block comment")
+                        }
+                        throw NeedMoreInputException(this)
+                    }
                     if (c == '*' && peek() == '/') {
                         next()
                         break
@@ -417,43 +537,66 @@ object JSONParser {
                 continue
             }
 
-            if (!moved) {
+            if (!moved) break
+        }
+    }
+
+    private fun isIdStart(c: Char): Boolean {
+        val code = c.code
+        return if (code < 128) ASCII_ID_START[code] else CasonUtil.isIdStart(c)
+    }
+
+    private fun isIdPart(c: Char): Boolean {
+        val code = c.code
+        return if (code < 128) ASCII_ID_PART[code] else CasonUtil.isIdPart(c)
+    }
+
+    private fun CharReader.parseIdentifierFast(): String {
+        // Scan in current buffer.
+        require(1)
+        val s = this.index
+        val first = this.chars[this.index]
+        if (!isIdStart(first)) {
+            error("Invalid identifier start '$first'")
+        }
+
+        // Consume first.
+        this.index++
+        this.col++
+
+        while (this.index < this.end) {
+            val c = this.chars[this.index]
+            if (!isIdPart(c)) {
                 break
             }
+            this.index++
+            this.col++
         }
+
+        // If chunk ended in the middle of an identifier, and not final, we must ask for more
+        if (!this.isFinal && this.index >= this.end) {
+            throw NeedMoreInputException(this)
+        }
+
+        return String(this.chars, s, this.index - s)
     }
 
-    private fun CharReader.consumeLineTerminator() {
-        val c = peek() ?: return
-        if (c == '\r') {
-            next()
-            if (peek() == '\n') {
-                next()
-            }
-            return
+    private fun CharReader.matchLiteral(lit: String): Boolean {
+        val n = lit.length
+        if (this.index + n > this.end) {
+            if (this.isFinal) return false
+            throw NeedMoreInputException(this)
         }
-        if (c == '\n' || c == '\u2028' || c == '\u2029') {
-            next()
-        }
-    }
-
-    private fun CharReader.peekStartsWith(lit: String): Boolean {
-        if (this.index + lit.length > this.string.length) {
-            return false
-        }
-        for (k in lit.indices) {
-            if (lit[k] != this.string[this.index + k]) {
-                return false
-            }
+        for (i in 0 until n) {
+            if (this.chars[this.index + i] != lit[i]) return false
         }
         return true
     }
 
     private fun CharReader.consumeLiteral(lit: String) {
-        if (!peekStartsWith(lit)) {
-            error("Expected literal '$lit'")
-        }
-        repeat(lit.length) {
+        if (!matchLiteral(lit)) error("Expected literal '$lit'")
+        // consume without extra checks
+        for (i in lit.indices) {
             next()
         }
     }
