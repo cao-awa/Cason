@@ -5,9 +5,27 @@ import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 fun main() {
-    parsing()
+    path()
+}
 
-    dsl()
+fun path() {
+    val json = JSONObject {
+        path("a.b.c") {
+            "awa" set "www" validate {
+                true
+            } map {
+                "$it-qaq"
+            }
+        }
+
+        path("a.b.c") {
+            "qaq" set 12300 mapIfValidated {
+                it * 100
+            }
+        }
+    }
+
+    println(JSONWriter.stringify(json, pretty = true))
 }
 
 fun dsl() {
@@ -17,17 +35,17 @@ fun dsl() {
         "name" set "Cason"
         "version" set "1.0.0"
         array("keywords") {
-            +"kotlin"
-            +"json"
-            +"json5"
-            +"parser"
+            add("kotlin")
+            add("json")
+            add("json5")
+            add("parser")
         }
         json("awa") {
             "test-awa" set "awa"
             "test-number" set 1234567
         }
-        computeInt("test-compute") {
-            123 + (it ?:0)
+        computeInt("test-compute") { source: Int? ->
+            123 + (source ?:0)
         }
     }
 

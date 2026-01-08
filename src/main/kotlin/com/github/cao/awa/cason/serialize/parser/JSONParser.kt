@@ -320,31 +320,30 @@ object JSONParser {
         this.col += (index - start)
         this.index = index
 
-        var idx = this.index
         var col = this.col
 
         while (true) {
-            if (idx >= end) {
+            if (index >= end) {
                 if (this.isFinal) error("Unterminated string")
                 throw NeedMoreInputException(this)
             }
 
-            val c = chars[idx++]
+            val c = chars[index++]
             col++
 
             when (c) {
                 quote -> {
-                    this.index = idx
+                    this.index = index
                     this.col = col
                     return builder.toString()
                 }
 
                 '\\' -> {
-                    if (idx >= end) {
+                    if (index >= end) {
                         if (this.isFinal) error("Unterminated escape in string")
                         throw NeedMoreInputException(this)
                     }
-                    val esc = chars[idx++]
+                    val esc = chars[index++]
                     col++
                     builder.append(
                         when (esc) {
@@ -367,7 +366,7 @@ object JSONParser {
 
                 '\r' -> {
                     // If CR is last char in buffer and streaming, might be CRLF split
-                    if (idx >= end && !this.isFinal) throw NeedMoreInputException(this)
+                    if (index >= end && !this.isFinal) throw NeedMoreInputException(this)
                     error("Unescaped line terminator in string")
                 }
 
@@ -377,21 +376,21 @@ object JSONParser {
     }
 
     private fun CharReader.parseNumber(): CasonNumber {
-        val a = this.chars
-        val e = this.end
+        val chars = this.chars
+        val end = this.end
 
         var index = this.index
         var col = this.col
 
         // Sign.
         var sign = 1
-        if (index >= e) {
+        if (index >= end) {
             if (this.isFinal) {
                 error("Invalid number")
             }
             throw NeedMoreInputException(this)
         }
-        val first = a[index]
+        val first = chars[index]
         if (first == '+' || first == '-') {
             sign = if (first == '-') {
                 -1
@@ -400,7 +399,7 @@ object JSONParser {
             }
             index++
             col++
-            if (index >= e) {
+            if (index >= end) {
                 if (this.isFinal) {
                     error("Invalid number")
                 }
@@ -415,8 +414,8 @@ object JSONParser {
         var overflow = false
 
         // integer part
-        while (index < e) {
-            val c = a[index]
+        while (index < end) {
+            val c = chars[index]
             if (c !in '0'..'9') {
                 break
             }
@@ -435,11 +434,11 @@ object JSONParser {
         }
 
         // Fraction.
-        if (index < e && a[index] == '.') {
+        if (index < end && chars[index] == '.') {
             index++
             col++
-            while (index < e) {
-                val c = a[index]
+            while (index < end) {
+                val c = chars[index]
                 if (c !in '0'..'9') break
                 if (!overflow) {
                     val d = c.code - 48
@@ -462,13 +461,13 @@ object JSONParser {
         }
 
         // Exponent.
-        if (index < e) {
-            val c = a[index]
+        if (index < end) {
+            val c = chars[index]
             if (c == 'e' || c == 'E') {
                 index++
                 col++
 
-                if (index >= e) {
+                if (index >= end) {
                     if (this.isFinal) {
                         error("Invalid exponent in number")
                     }
@@ -476,7 +475,7 @@ object JSONParser {
                 }
 
                 var expSign = 1
-                val s = a[index]
+                val s = chars[index]
                 if (s == '+' || s == '-') {
                     expSign = if (s == '-') {
                         -1
@@ -489,8 +488,8 @@ object JSONParser {
 
                 var exp = 0
                 var expDigits = 0
-                while (index < e) {
-                    val dch = a[index]
+                while (index < end) {
+                    val dch = chars[index]
                     if (dch !in '0'..'9') {
                         break
                     }
@@ -537,6 +536,7 @@ object JSONParser {
     private fun CharReader.parseIdentifier(): String {
         val chars = this.chars
         val start = this.index
+        val end = this.end
 
         // First char must exist and be idStart (caller checked).
         ensureAvailable(1)
@@ -544,8 +544,7 @@ object JSONParser {
         this.col++
 
         var index = this.index
-        val e = this.end
-        while (index < e && CasonUtil.isIdPart(chars[index])) {
+        while (index < end && CasonUtil.isIdPart(chars[index])) {
             index++
         }
 

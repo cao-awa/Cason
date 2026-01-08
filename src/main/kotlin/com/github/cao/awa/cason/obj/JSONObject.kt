@@ -1,4 +1,5 @@
 @file:Suppress("unused")
+
 package com.github.cao.awa.cason.obj
 
 import com.github.cao.awa.cason.JSONElement
@@ -8,20 +9,26 @@ import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
+import com.github.cao.awa.cason.stream.DataStream
 import kotlin.collections.component1
 import kotlin.collections.component2
 
 class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElement {
+    private val pendingData: MutableList<DataStream<*>> = ArrayList()
+
     constructor(body: JSONObject.() -> Unit) : this(LinkedHashMap<String, JSONElement>()) {
         body(this)
+        commitPendingData()
     }
 
     fun array(key: String, body: JSONArray.() -> Unit): JSONArray = JSONArray(body).also {
         put(key, it)
+        commitPendingData()
     }
 
     fun json(key: String, body: JSONObject.() -> Unit): JSONObject = JSONObject(body).also {
         put(key, it)
+        commitPendingData()
     }
 
     fun put(key: String, value: JSONObject): JSONObject = putElement(key, value)
@@ -35,16 +42,16 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     fun put(key: String, value: Float): JSONObject = putElement(key, JSONNumber.ofFloat(value))
     fun put(key: String, value: Double): JSONObject = putElement(key, JSONNumber.ofDouble(value))
 
-    infix fun String.set(value: JSONObject): JSONObject = put(this, value)
-    infix fun String.set(value: JSONArray): JSONObject = put(this, value)
-    infix fun String.set(value: String): JSONObject = put(this, value)
-    infix fun String.set(value: Boolean): JSONObject = put(this, value)
-    infix fun String.set(value: Byte): JSONObject = put(this, value)
-    infix fun String.set(value: Short): JSONObject = put(this, value)
-    infix fun String.set(value: Int): JSONObject = put(this, value)
-    infix fun String.set(value: Long): JSONObject = put(this, value)
-    infix fun String.set(value: Float): JSONObject = put(this, value)
-    infix fun String.set(value: Double): JSONObject = put(this, value)
+    infix fun String.set(value: JSONObject): DataStream<JSONObject> = pendingData(value) { put(this, it) }
+    infix fun String.set(value: JSONArray): DataStream<JSONArray> = pendingData(value) { put(this, it) }
+    infix fun String.set(value: String): DataStream<String> = pendingData(value) { put(this, it) }
+    infix fun String.set(value: Boolean): DataStream<Boolean> = pendingData(value) { put(this, it) }
+    infix fun String.set(value: Byte): DataStream<Byte> = pendingData(value) { put(this, it) }
+    infix fun String.set(value: Short): DataStream<Short> = pendingData(value) { put(this, it) }
+    infix fun String.set(value: Int): DataStream<Int> = pendingData(value) { put(this, it) }
+    infix fun String.set(value: Long): DataStream<Long> = pendingData(value) { put(this, it) }
+    infix fun String.set(value: Float): DataStream<Float> = pendingData(value) { put(this, it) }
+    infix fun String.set(value: Double): DataStream<Double> = pendingData(value) { put(this, it) }
 
     private fun putElement(key: String, value: JSONElement): JSONObject {
         this.map[key] = value
@@ -86,17 +93,52 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     fun computeFloat(key: String, back: (Float?) -> Float): JSONObject = put(key, back(getFloat(key)))
     fun computeDouble(key: String, back: (Double?) -> Double): JSONObject = put(key, back(getDouble(key)))
 
-    fun forEach(action: (MutableMap.MutableEntry<String, JSONElement>)-> Unit) {
+    private fun <T> pendingData(rawData: T, finalize: (T) -> Unit): DataStream<T> {
+        return DataStream(rawData, finalize).also {
+            this.pendingData.add(it)
+        }
+    }
+
+    private fun commitPendingData() {
+        if (this.pendingData.isEmpty()) {
+            return
+        }
+
+        this.pendingData.forEach(DataStream<*>::commit)
+        this.pendingData.clear()
+    }
+
+    fun path(path: String, body: JSONObject.() -> Unit): JSONObject {
+        commitPendingData()
+        var base = this
+        path.split('.').forEach { key: String ->
+            // Use 'getJSON' by base to prevent repeat using path cleaning old data.
+            base = base.getJSON(key) ?: JSONObject {
+                // Put new JSON object if not present.
+                base.put(key, this)
+            }
+        }
+
+        // Callback given last JSON object.
+        body(base)
+
+        return this
+    }
+
+    fun forEach(action: (MutableMap.MutableEntry<String, JSONElement>) -> Unit) {
+        commitPendingData()
         for (entry in this.map) {
             action(entry)
         }
     }
 
     private fun getElement(key: String): Any? {
+        commitPendingData()
         return this.map[key]
     }
 
     fun toString(pretty: Boolean, indent: String, depth: Int): String {
+        commitPendingData()
         val builder = StringBuilder()
         builder.append('{')
         if (this.map.isEmpty()) {
