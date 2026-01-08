@@ -12,18 +12,29 @@ fun path() {
     val json = JSONObject {
         path("a.b.c") {
             "awa" set "www" validate {
-                true
+                false
             } map {
                 "$it-qaq"
+            } defaultSet {
+                "INVALIDED"
             }
         }
 
         path("a.b.c") {
-            "qaq" set 12300 mapIfValidated {
+            "qaq" set 12300 ifValidated {
+                println("Validated: $it")
+            } mapIfValidated {
                 it * 100
             }
+
+            "array" set array {
+                +"awa"
+                +"qaq"
+                +"owo"
+                +"qwq"
+            }
         }
-    }
+    }.build()
 
     println(JSONWriter.stringify(json, pretty = true))
 }

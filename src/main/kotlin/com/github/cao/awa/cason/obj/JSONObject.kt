@@ -18,17 +18,18 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
 
     constructor(body: JSONObject.() -> Unit) : this(LinkedHashMap<String, JSONElement>()) {
         body(this)
-        commitPendingData()
     }
 
-    fun array(key: String, body: JSONArray.() -> Unit): JSONArray = JSONArray(body).also {
+    fun array(body: JSONArray.() -> Unit): JSONArray = JSONArray(body)
+
+    fun array(key: String, body: JSONArray.() -> Unit): JSONArray = array(body).also {
         put(key, it)
-        commitPendingData()
     }
 
-    fun json(key: String, body: JSONObject.() -> Unit): JSONObject = JSONObject(body).also {
+    fun json(body: JSONObject.() -> Unit): JSONObject = JSONObject(body)
+
+    fun json(key: String, body: JSONObject.() -> Unit): JSONObject = json(body).also {
         put(key, it)
-        commitPendingData()
     }
 
     fun put(key: String, value: JSONObject): JSONObject = putElement(key, value)
@@ -99,17 +100,18 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
         }
     }
 
-    private fun commitPendingData() {
-        if (this.pendingData.isEmpty()) {
-            return
-        }
-
+    fun build(): JSONObject {
         this.pendingData.forEach(DataStream<*>::commit)
         this.pendingData.clear()
+
+        this.map.forEach { (_, value) ->
+            (value as? JSONObject)?.build()
+        }
+
+        return this
     }
 
     fun path(path: String, body: JSONObject.() -> Unit): JSONObject {
-        commitPendingData()
         var base = this
         path.split('.').forEach { key: String ->
             // Use 'getJSON' by base to prevent repeat using path cleaning old data.
@@ -126,19 +128,16 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     }
 
     fun forEach(action: (MutableMap.MutableEntry<String, JSONElement>) -> Unit) {
-        commitPendingData()
         for (entry in this.map) {
             action(entry)
         }
     }
 
     private fun getElement(key: String): Any? {
-        commitPendingData()
         return this.map[key]
     }
 
     fun toString(pretty: Boolean, indent: String, depth: Int): String {
-        commitPendingData()
         val builder = StringBuilder()
         builder.append('{')
         if (this.map.isEmpty()) {
