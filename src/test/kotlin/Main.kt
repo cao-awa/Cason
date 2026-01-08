@@ -9,20 +9,35 @@ fun main() {
 }
 
 fun path() {
+    val testId = 1
+
     val json = JSONObject {
-        path("a.b.c") {
-            "awa" set "www" validate {
-                false
-            } map {
-                "$it-qaq"
-            } defaultSet {
-                "INVALIDED"
+        "type" set string {
+            when (testId) {
+                1 -> "normal"
+                else -> "invalid"
             }
         }
 
         path("a.b.c") {
-            "qaq" set 12300 ifValidated {
-                println("Validated: $it")
+            "awa" set "www" validate {
+                failure("Test failure message")
+            } map {
+                "$it-qaq"
+            } defaultSet {
+                "INVALIDED"
+            } ifUnvalidated {
+                println("Invalid value '${this.value}' because: ${this.reason}")
+            }
+        }
+
+        path("a.b.c") {
+            "qaq" set 12300 validate {
+                result { this.data > 0 }
+            } validate {
+                failureIf({ this.data > 9999999 }, "Too small number")
+            } ifValidated {
+                println("Validated: ${this.value}")
             } mapIfValidated {
                 it * 100
             }
@@ -56,7 +71,7 @@ fun dsl() {
             "test-number" set 1234567
         }
         computeInt("test-compute") { source: Int? ->
-            123 + (source ?:0)
+            123 + (source ?: 0)
         }
     }
 

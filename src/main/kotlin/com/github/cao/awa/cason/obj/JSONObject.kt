@@ -54,6 +54,15 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     infix fun String.set(value: Float): DataStream<Float> = pendingData(value) { put(this, it) }
     infix fun String.set(value: Double): DataStream<Double> = pendingData(value) { put(this, it) }
 
+    fun string(value: () -> String): String = value()
+    fun bool(value: () -> Boolean): Boolean = value()
+    fun byte(value: () -> Byte): Byte = value()
+    fun short(value: () -> Short): Short = value()
+    fun int(value: () -> Int): Int = value()
+    fun long(value: () -> Long): Long = value()
+    fun float(value: () -> Float): Float = value()
+    fun double(value: () -> Double): Double = value()
+
     private fun putElement(key: String, value: JSONElement): JSONObject {
         this.map[key] = value
         return this
