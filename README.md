@@ -73,9 +73,9 @@ Benchmarks parsing a small elements object, repeat 10000 times to widen the perf
 ```
 
 ### Test result (parsing speed)
-* **Cason**: 273ms
-* **fastjson2**: 139ms
-* **org.json**: 761ms
+* **Cason**: 255ms
+* **fastjson2**: 134ms
+* **org.json**: 787ms
 
 </details>
 
