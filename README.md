@@ -191,7 +191,7 @@ import com.github.cao.awa.cason.codec.JSONCodec
 
 fun main() {
     println(
-        JSONDecoder.decode<Empty>(
+        JSONCodec.decode<Empty>(
             JSONObject {
                 "value" set "Test"
                 "test_id" set 1234
@@ -201,7 +201,7 @@ fun main() {
                 }
             }.build()
         ).also {
-            println(JSONEncoder.encode(it))
+            println(JSONCodec.encode(it))
         }
     )
 }
