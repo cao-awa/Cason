@@ -1,6 +1,6 @@
 # Cason
 
-**Cason** is a lightweight, high-performance JSON/JSON5 parsing library for Kotlin with expressive DSL.
+**Cason** is a lightweight, high-performance, type safe JSON/JSON5 parsing library for Kotlin with expressive DSL.
 
 ## Features
 
