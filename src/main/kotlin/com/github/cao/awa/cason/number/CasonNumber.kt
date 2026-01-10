@@ -1,6 +1,5 @@
 package com.github.cao.awa.cason.number
 
-import com.github.cao.awa.cason.primary.JSONNumber
 import java.math.BigDecimal
 
 data class CasonNumber(

@@ -57,7 +57,7 @@ class JSONParser {
             if (this.isFinal) {
                 error("Unexpected EOF")
             }
-            throw NeedMoreInputException(this)
+            throw NeedMoreInputException(this.index, this.line, this.col)
         }
     }
 
@@ -218,7 +218,6 @@ class JSONParser {
     fun skipComments(chars: CharArray) {
         var index = this.index
         val end = this.end
-
         var line = this.line
         var col = this.col
 
@@ -250,7 +249,12 @@ class JSONParser {
                         }
                     } else {
                         if (!this.isFinal) {
-                            throw NeedMoreInputException(this)
+                            // Commit reader.
+                            this.index = index
+                            this.line = line
+                            this.col = col
+
+                            throw NeedMoreInputException(this.index, this.line, this.col)
                         }
                         index++
                     }
@@ -287,10 +291,15 @@ class JSONParser {
                 col += 2
                 while (true) {
                     if (index + 1 >= end) {
+                        // Commit reader.
+                        this.index = index
+                        this.line = line
+                        this.col = col
+
                         if (this.isFinal) {
                             error("Unterminated block comment")
                         }
-                        throw NeedMoreInputException(this)
+                        throw NeedMoreInputException(this.index, this.line, this.col)
                     }
                     val commentChar = chars[index]
                     if (commentChar == '*' && chars[index + 1] == '/') {
@@ -325,6 +334,7 @@ class JSONParser {
             break
         }
 
+        // Commit reader.
         this.index = index
         this.line = line
         this.col = col
@@ -343,8 +353,10 @@ class JSONParser {
         // Fast path: only look for quote or backslash.
         while (true) {
             if (index >= end) {
-                if (this.isFinal) error("Unterminated string")
-                throw NeedMoreInputException(this)
+                if (this.isFinal) {
+                    error("Unterminated string")
+                }
+                throw NeedMoreInputException(this.index, this.line, this.col)
             }
             val c = chars[index]
             if (c == quote) {
@@ -368,8 +380,10 @@ class JSONParser {
 
         while (true) {
             if (index >= end) {
-                if (this.isFinal) error("Unterminated string")
-                throw NeedMoreInputException(this)
+                if (this.isFinal) {
+                    error("Unterminated string")
+                }
+                throw NeedMoreInputException(this.index, this.line, this.col)
             }
 
             val c = chars[index++]
@@ -384,8 +398,10 @@ class JSONParser {
 
                 '\\' -> {
                     if (index >= end) {
-                        if (this.isFinal) error("Unterminated escape in string")
-                        throw NeedMoreInputException(this)
+                        if (this.isFinal) {
+                            error("Unterminated escape in string")
+                        }
+                        throw NeedMoreInputException(this.index, this.line, this.col)
                     }
                     val esc = chars[index++]
                     col++
@@ -410,7 +426,9 @@ class JSONParser {
 
                 '\r' -> {
                     // If CR is last char in buffer and streaming, might be CRLF split
-                    if (index >= end && !this.isFinal) throw NeedMoreInputException(this)
+                    if (index >= end && !this.isFinal) {
+                        throw NeedMoreInputException(this.index, this.line, this.col)
+                    }
                     error("Unescaped line terminator in string")
                 }
 
@@ -431,7 +449,7 @@ class JSONParser {
             if (this.isFinal) {
                 error("Invalid number")
             }
-            throw NeedMoreInputException(this)
+            throw NeedMoreInputException(this.index, this.line, this.col)
         }
         val first = chars[index]
         if (first == '+' || first == '-') {
@@ -446,7 +464,7 @@ class JSONParser {
                 if (this.isFinal) {
                     error("Invalid number")
                 }
-                throw NeedMoreInputException(this)
+                throw NeedMoreInputException(this.index, this.line, this.col)
             }
         }
 
@@ -514,7 +532,7 @@ class JSONParser {
                     if (this.isFinal) {
                         error("Invalid exponent in number")
                     }
-                    throw NeedMoreInputException(this)
+                    throw NeedMoreInputException(this.index, this.line, this.col)
                 }
 
                 var expSign = 1
