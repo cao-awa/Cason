@@ -19,7 +19,9 @@ fun serialization() {
                 "value" set "Test"
                 "test_id" set 1234
 
-                "test_nested" nested TestNested("Awa")
+                nested<TestNested>("test_nested") {
+                    TestNested("QwQ")
+                }
             }.also {
                 println(it)
             }

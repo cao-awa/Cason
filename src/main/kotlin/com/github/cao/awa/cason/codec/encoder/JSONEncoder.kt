@@ -8,7 +8,7 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
 
 object JSONEncoder {
-    fun encode(data: Any): JSONObject {
+    inline fun <reified T: Any> encode(data: T): JSONObject {
         val type = data::class
         if (type.isData) {
             return JSONObject {

@@ -273,6 +273,29 @@ fun test() {
     }
 }
 
+// Never put element that not data class into a JSONObject!
+data class TestNested(val name: String)
+```
+
+The nested is a data, DSL body cannot insert other element into it:
+```kotlin
+fun test() {
+    JSONObject {
+        // Use 'nested' to auto encode to JSONObject.
+        nested<TestNested>("test_nested") {
+            // Nested object should always const, no dynamic element insertions.
+            // So this is an unexpected behaviors, cannot put other element into nested body.
+            // This set call will insert "value" to the parent JSONObject instead of nested object.
+            "key" set "value" 
+            
+            // Getter style to construct the nested object is 
+            // design to something intermediate operations like fetch to databases.
+            // Not for constructing a dynamic object.
+            TestNested("QwQ")
+        }
+    }
+}
+
 data class TestNested(val name: String)
 ```
 
