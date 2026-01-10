@@ -15,7 +15,7 @@
 
 Cason is optimized for real-world usage scenarios:
 
-- **vs org.json**: 1.5x-2x faster for standard JSON parsing
+- **vs org.json**: 2.5x-3x faster for standard JSON parsing
 - **vs fastjson2**: Slightly slower for pure throughput but more memory efficient
 - **JSON5**: Competitive parsing speed with excellent error recovery
 
