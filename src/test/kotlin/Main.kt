@@ -1,7 +1,6 @@
+import com.github.cao.awa.cason.codec.JSONCodec
 import com.github.cao.awa.cason.codec.annotation.Nested
 import com.github.cao.awa.cason.codec.annotation.Field
-import com.github.cao.awa.cason.codec.decoder.JSONDecoder
-import com.github.cao.awa.cason.codec.encoder.JSONEncoder
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
@@ -9,8 +8,12 @@ import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 fun main() {
+    parsing()
+}
+
+fun serialization() {
     println(
-        JSONDecoder.decode<Empty>(
+        JSONCodec.decode<Empty>(
             JSONObject {
                 "value" set "Test"
                 "test_id" set 1234
@@ -20,7 +23,7 @@ fun main() {
                 }
             }.build()
         ).also {
-            println(JSONEncoder.encode(it))
+            println(JSONCodec.encode(it))
         }
     )
 }

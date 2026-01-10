@@ -3,6 +3,7 @@ package com.github.cao.awa.cason.serialize.parser
 
 import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
+import com.github.cao.awa.cason.exception.JSONParseException
 import com.github.cao.awa.cason.exception.NeedMoreInputException
 import com.github.cao.awa.cason.number.CasonNumber
 import com.github.cao.awa.cason.obj.JSONObject
@@ -10,28 +11,49 @@ import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
-import com.github.cao.awa.cason.reader.CharReader
 import com.github.cao.awa.cason.util.CasonUtil
 import java.math.BigDecimal
 
-object JSONParser {
-    fun parseObject(input: String): JSONObject = parse(input) as JSONObject
-    fun parseArray(input: String): JSONArray = parse(input) as JSONArray
+class JSONParser {
+    companion object {
+        fun parseObject(input: String): JSONObject = parse(input) as JSONObject
+        fun parseArray(input: String): JSONArray = parse(input) as JSONArray
 
-    fun parse(input: String): JSONElement {
-        val chars = input.toCharArray()
-        val reader = CharReader(chars, 0, chars.size, true)
-        val element = reader.parseElement()
-        reader.skipWsAndComments()
-        if (reader.eof()) {
-            return element
-        } else {
-            reader.error("Trailing characters after top-level value")
+        fun parse(input: String): JSONElement {
+            val chars = input.toCharArray()
+            val parser = JSONParser(0, chars.size, true)
+            val element = parser.parseElement(chars)
+            if (parser.shouldSkipWs(chars)) {
+                parser.skipComments(chars)
+            }
+            if (parser.eof()) {
+                return element
+            } else {
+                parser.error("Trailing characters after top-level value")
+            }
         }
     }
 
-    private fun CharReader.ensureAvailable(n: Int = 1) {
-        if (this.index + (n - 1) >= this.end) {
+    var index: Int
+    val end: Int
+    val isFinal: Boolean
+    var line: Int = 1
+    var col: Int = 1
+
+    constructor(start: Int, end: Int, isFinal: Boolean) {
+        this.index = start
+        this.end = end
+        this.isFinal = isFinal
+    }
+
+    fun eof(): Boolean = this.index >= this.end
+
+    fun error(msg: String): Nothing {
+        throw JSONParseException("$msg at line $this.line, column $this.col")
+    }
+
+    private fun ensureAvailable() {
+        if (this.index >= this.end) {
             if (this.isFinal) {
                 error("Unexpected EOF")
             }
@@ -39,43 +61,42 @@ object JSONParser {
         }
     }
 
-    private fun CharReader.peekChar(): Char? =
-        if (this.index < end) this.chars[this.index] else null
+    private fun peekChar(chars: CharArray): Char? =
+        if (this.index < this.end) chars[this.index] else null
 
-    private fun CharReader.peek2Char(): Char? =
-        if (this.index + 1 < end) this.chars[this.index + 1] else null
-
-    private fun CharReader.readCharNoLine(): Char {
+    private fun readCharNoLine(chars: CharArray): Char {
         // Fast path: for structural / number / identifier scanning (no line terminators expected).
-        ensureAvailable(1)
-        val c = this.chars[this.index++]
+        ensureAvailable()
+        val c = chars[this.index++]
         this.col++
         return c
     }
 
-    private fun CharReader.expectChar(ch: Char) {
-        ensureAvailable(1)
-        val got = readCharNoLine()
-        if (got != ch) {
-            error("Expected '$ch' but got '$got'")
+    private fun expectChar(chars: CharArray, expected: Char) {
+        ensureAvailable()
+        val got = readCharNoLine(chars)
+        if (got != expected) {
+            error("Expected '$expected' but got '$got'")
         }
     }
 
-    private fun CharReader.parseElement(): JSONElement {
-        skipWsAndComments()
-        ensureAvailable(1)
-        return when (this.chars[index]) {
-            '{' -> parseObject()
-            '[' -> parseArray()
-            '"', '\'' -> JSONString(parseString())
-            '+', '-', '.', in '0'..'9' -> JSONNumber(parseNumber())
-            else -> parseIdentifierValueOrError(this.chars[index])
+    private fun parseElement(chars: CharArray): JSONElement {
+        if (shouldSkipWs(chars)) {
+            skipComments(chars)
+        }
+        ensureAvailable()
+        return when (val firstChar = chars[this.index]) {
+            '{' -> parseObject(chars)
+            '[' -> parseArray(chars)
+            '"', '\'' -> JSONString(parseString(chars))
+            '+', '-', '.', in '0'..'9' -> JSONNumber(parseNumber(chars))
+            else -> parseIdentifierValueOrError(chars, firstChar)
         }
     }
 
-    private fun CharReader.parseIdentifierValueOrError(c: Char): JSONElement {
+    private fun parseIdentifierValueOrError(chars: CharArray, c: Char): JSONElement {
         if (CasonUtil.isIdStart(c)) {
-            return when (val id = parseIdentifier()) {
+            return when (val id = parseIdentifier(chars)) {
                 "null" -> JSONNull
                 "true" -> JSONBoolean(true)
                 "false" -> JSONBoolean(false)
@@ -87,33 +108,41 @@ object JSONParser {
         error("Unexpected character '$c'")
     }
 
-    private fun CharReader.parseObject(): JSONObject {
-        expectChar('{')
-        skipWsAndComments()
+    private fun parseObject(chars: CharArray): JSONObject {
+        expectChar(chars,'{')
+        if (shouldSkipWs(chars)) {
+            skipComments(chars)
+        }
 
         val map = LinkedHashMap<String, JSONElement>(24)
 
-        if (peekChar() == '}') {
-            readCharNoLine()
+        if (peekChar(chars) == '}') {
+            readCharNoLine(chars)
             return JSONObject(map)
         }
 
         while (true) {
-            val key = parseObjectKey()
-            skipWsAndComments()
+            val key = parseObjectKey(chars)
+            if (shouldSkipWs(chars)) {
+                skipComments(chars)
+            }
             // ':' is structural, no line break expected.
-            expectChar(':')
-            val value = parseElement()
+            expectChar(chars, ':')
+            val value = parseElement(chars)
             map[key] = value
-            skipWsAndComments()
+            if (shouldSkipWs(chars)) {
+                skipComments(chars)
+            }
 
-            when (peekChar()) {
+            when (peekChar(chars)) {
                 ',' -> {
-                    readCharNoLine()
-                    skipWsAndComments()
+                    readCharNoLine(chars)
+                    if (shouldSkipWs(chars)) {
+                        skipComments(chars)
+                    }
                 }
                 '}' -> {
-                    readCharNoLine()
+                    readCharNoLine(chars)
                     break
                 }
                 else -> error("Expected ',' or '}' in object")
@@ -123,43 +152,51 @@ object JSONParser {
         return JSONObject(map)
     }
 
-    private fun CharReader.parseObjectKey(): String {
-        skipWsAndComments()
+    private fun parseObjectKey(chars: CharArray): String {
+        if (shouldSkipWs(chars)) {
+            skipComments(chars)
+        }
         val index = this.index
         if (index >= this.end) {
             error("Unexpected EOF in object key")
         }
-        val keyChar = this.chars[index]
+        val keyChar = chars[index]
         return when {
-            keyChar == '"' || keyChar == '\'' -> parseString()
-            keyChar == '+' || keyChar == '-' || keyChar == '.' || keyChar.isDigit() -> parseNumber().toString()
-            CasonUtil.isIdStart(keyChar) -> parseIdentifier()
+            keyChar == '"' || keyChar == '\'' -> parseString(chars)
+            keyChar == '+' || keyChar == '-' || keyChar == '.' || keyChar.isDigit() -> parseNumber(chars).toString()
+            CasonUtil.isIdStart(keyChar) -> parseIdentifier(chars)
             else -> error("Invalid object key start '$keyChar'")
         }
     }
 
-    private fun CharReader.parseArray(): JSONArray {
-        expectChar('[')
-        skipWsAndComments()
+    private fun parseArray(chars: CharArray): JSONArray {
+        expectChar(chars, '[')
+        if (shouldSkipWs(chars)) {
+            skipComments(chars)
+        }
 
         val list = ArrayList<JSONElement>(24)
 
-        if (peekChar() == ']') {
-            readCharNoLine()
+        if (peekChar(chars) == ']') {
+            readCharNoLine(chars)
             return JSONArray(list)
         }
 
         while (true) {
-            list.add(parseElement())
-            skipWsAndComments()
+            list.add(parseElement(chars))
+            if (shouldSkipWs(chars)) {
+                skipComments(chars)
+            }
 
-            when (peekChar()) {
+            when (peekChar(chars)) {
                 ',' -> {
-                    readCharNoLine()
-                    skipWsAndComments()
+                    readCharNoLine(chars)
+                    if (shouldSkipWs(chars)) {
+                        skipComments(chars)
+                    }
                 }
                 ']' -> {
-                    readCharNoLine()
+                    readCharNoLine(chars)
                     break
                 }
                 else -> error("Expected ',' or ']' in array")
@@ -169,8 +206,16 @@ object JSONParser {
         return JSONArray(list)
     }
 
-    fun CharReader.skipWsAndComments() {
-        val chars = this.chars
+    fun shouldSkipWs(chars: CharArray): Boolean {
+        val index = this.index
+        if (index < this.end) {
+            val currentChar = chars[index]
+            return currentChar <= ' ' || currentChar == '/'
+        }
+        return true
+    }
+
+    fun skipComments(chars: CharArray) {
         var index = this.index
         val end = this.end
 
@@ -180,23 +225,23 @@ object JSONParser {
         while (true) {
             // Skip whitespace and line terminators.
             while (index < end) {
-                val c = chars[index]
+                val currentChar = chars[index]
 
                 // Fast whitespace (space / tab etc.).
-                if (CasonUtil.isWs(c)) {
+                if (CasonUtil.isWs(currentChar)) {
                     index++
                     col++
                     continue
                 }
 
                 // Line terminators.
-                if (c == '\n' || c == '\u2028' || c == '\u2029') {
+                if (currentChar == '\n' || currentChar == '\u2028' || currentChar == '\u2029') {
                     index++
                     line++
                     col = 1
                     continue
                 }
-                if (c == '\r') {
+                if (currentChar == '\r') {
                     if (index + 1 < end) {
                         if (chars[index + 1] == '\n') {
                             index += 2
@@ -285,9 +330,8 @@ object JSONParser {
         this.col = col
     }
 
-    private fun CharReader.parseString(): String {
-        val chars = this.chars
-        ensureAvailable(1)
+    private fun parseString(chars: CharArray): String {
+        ensureAvailable()
         val quote = chars[this.index]
         this.index++
         this.col++
@@ -375,8 +419,7 @@ object JSONParser {
         }
     }
 
-    private fun CharReader.parseNumber(): CasonNumber {
-        val chars = this.chars
+    private fun parseNumber(chars: CharArray): CasonNumber {
         val end = this.end
 
         var index = this.index
@@ -533,27 +576,22 @@ object JSONParser {
         return CasonNumber.finite(bd)
     }
 
-    private fun CharReader.parseIdentifier(): String {
-        val chars = this.chars
+    private fun parseIdentifier(chars: CharArray): String {
         val start = this.index
+        var index = start + 1
         val end = this.end
 
         // First char must exist and be idStart (caller checked).
-        ensureAvailable(1)
-        this.index++
-        this.col++
+        ensureAvailable()
 
-        var index = this.index
         while (index < end && CasonUtil.isIdPart(chars[index])) {
             index++
         }
 
         // Commit index.
-        val len = index - start
-        val extra = index - this.index
+        this.col += index - this.index + 1
         this.index = index
-        this.col += extra
 
-        return String(chars, start, len)
+        return String(chars, start, index - start)
     }
 }
