@@ -14,7 +14,7 @@ import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.util.CasonUtil
 import java.math.BigDecimal
 
-class JSONParser {
+open class JSONParser {
     companion object {
         fun parseObject(input: String): JSONObject = parse(input) as JSONObject
         fun parseArray(input: String): JSONArray = parse(input) as JSONArray
@@ -48,11 +48,11 @@ class JSONParser {
 
     fun eof(): Boolean = this.index >= this.end
 
-    fun error(msg: String): Nothing {
+    protected fun error(msg: String): Nothing {
         throw JSONParseException("$msg at line $this.line, column $this.col")
     }
 
-    private fun ensureAvailable() {
+    protected fun ensureAvailable() {
         if (this.index >= this.end) {
             if (this.isFinal) {
                 error("Unexpected EOF")
@@ -61,10 +61,10 @@ class JSONParser {
         }
     }
 
-    private fun peekChar(chars: CharArray): Char? =
+    fun peekChar(chars: CharArray): Char? =
         if (this.index < this.end) chars[this.index] else null
 
-    private fun readCharNoLine(chars: CharArray): Char {
+    protected fun readCharNoLine(chars: CharArray): Char {
         // Fast path: for structural / number / identifier scanning (no line terminators expected).
         ensureAvailable()
         val c = chars[this.index++]
@@ -72,7 +72,7 @@ class JSONParser {
         return c
     }
 
-    private fun expectChar(chars: CharArray, expected: Char) {
+    protected fun expectChar(chars: CharArray, expected: Char) {
         ensureAvailable()
         val got = readCharNoLine(chars)
         if (got != expected) {
@@ -80,7 +80,7 @@ class JSONParser {
         }
     }
 
-    private fun parseElement(chars: CharArray): JSONElement {
+    protected open fun parseElement(chars: CharArray): JSONElement {
         if (shouldSkipWs(chars)) {
             skipComments(chars)
         }
@@ -94,7 +94,7 @@ class JSONParser {
         }
     }
 
-    private fun parseIdentifierValueOrError(chars: CharArray, c: Char): JSONElement {
+    protected fun parseIdentifierValueOrError(chars: CharArray, c: Char): JSONElement {
         if (CasonUtil.isIdStart(c)) {
             return when (val id = parseIdentifier(chars)) {
                 "null" -> JSONNull
@@ -108,7 +108,7 @@ class JSONParser {
         error("Unexpected character '$c'")
     }
 
-    private fun parseObject(chars: CharArray): JSONObject {
+    protected open fun parseObject(chars: CharArray): JSONObject {
         expectChar(chars,'{')
         if (shouldSkipWs(chars)) {
             skipComments(chars)
@@ -152,7 +152,7 @@ class JSONParser {
         return JSONObject(map)
     }
 
-    private fun parseObjectKey(chars: CharArray): String {
+    protected open fun parseObjectKey(chars: CharArray): String {
         if (shouldSkipWs(chars)) {
             skipComments(chars)
         }
@@ -169,7 +169,7 @@ class JSONParser {
         }
     }
 
-    private fun parseArray(chars: CharArray): JSONArray {
+    protected fun parseArray(chars: CharArray): JSONArray {
         expectChar(chars, '[')
         if (shouldSkipWs(chars)) {
             skipComments(chars)
@@ -206,7 +206,7 @@ class JSONParser {
         return JSONArray(list)
     }
 
-    fun shouldSkipWs(chars: CharArray): Boolean {
+    open fun shouldSkipWs(chars: CharArray): Boolean {
         val index = this.index
         if (index < this.end) {
             val currentChar = chars[index]
@@ -340,7 +340,7 @@ class JSONParser {
         this.col = col
     }
 
-    private fun parseString(chars: CharArray): String {
+    protected open fun parseString(chars: CharArray): String {
         ensureAvailable()
         val quote = chars[this.index]
         this.index++
@@ -437,7 +437,7 @@ class JSONParser {
         }
     }
 
-    private fun parseNumber(chars: CharArray): CasonNumber {
+    protected fun parseNumber(chars: CharArray): CasonNumber {
         val end = this.end
 
         var index = this.index
@@ -594,7 +594,7 @@ class JSONParser {
         return CasonNumber.finite(bd)
     }
 
-    private fun parseIdentifier(chars: CharArray): String {
+    protected fun parseIdentifier(chars: CharArray): String {
         val start = this.index
         var index = start + 1
         val end = this.end

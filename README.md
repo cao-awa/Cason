@@ -74,6 +74,7 @@ Benchmarks parsing a small elements object, repeat 10000 times to widen the perf
 
 ### Test result (parsing speed)
 * **Cason**: 229ms
+* **Cason (Strict mode)**: 173ms
 * **fastjson2**: 131ms
 * **org.json**: 741ms
 

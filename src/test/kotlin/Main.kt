@@ -4,6 +4,7 @@ import com.github.cao.awa.cason.codec.annotation.Field
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
+import com.github.cao.awa.cason.serialize.parser.StrictJSONParser
 import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
@@ -166,6 +167,10 @@ fun parsing() {
 
     benchmark(testCount, "Cason") {
         JSONParser.parse(data)
+    }
+
+    benchmark(testCount, "Cason-strict") {
+        StrictJSONParser.parse(data)
     }
 
     benchmark(testCount, "fastjson") {
