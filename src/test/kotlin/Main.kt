@@ -1,3 +1,6 @@
+import com.github.cao.awa.cason.codec.annotation.Data
+import com.github.cao.awa.cason.codec.annotation.Mapper
+import com.github.cao.awa.cason.codec.decoder.JSONDecoder
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
@@ -5,8 +8,35 @@ import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 fun main() {
-    path()
+    println(
+        JSONDecoder.decode<Empty>(
+            JSONObject {
+                "value" set "Test"
+                "test_id" set 1234
+
+                json("inner_data") {
+                    "inner_string" set "Test inner"
+                }
+            }.build()
+        )
+    )
 }
+
+data class Empty(
+    val value: String,
+    @param:Mapper("test_id")
+    val testId: Int,
+    @param:Data
+    @param:Mapper("inner_data")
+    val innerData: TestInnerData
+) {
+    init {
+        require(this.value.isNotEmpty())
+        require(this.testId == 1234)
+    }
+}
+
+data class TestInnerData(@param:Mapper("inner_string") val innerString: String)
 
 fun path() {
     val testId = 1

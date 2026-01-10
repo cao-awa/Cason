@@ -34,6 +34,8 @@ repositories {
 }
 
 dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-reflect:${project.kotlin_version}"
+
     testImplementation 'com.alibaba.fastjson2:fastjson2:2.0.60'
     testImplementation 'org.json:json:20251224'
     testImplementation 'org.jetbrains.kotlin:kotlin-test'

@@ -162,7 +162,7 @@ fun main() {
 }
 ```
 
-# Serialization
+## Serialization
 
 ```kotlin
 import com.github.cao.awa.cason.obj.JSONObject
@@ -185,6 +185,42 @@ fun main() {
 }
 ```
 
+## Class construction
+```kotlin
+import com.github.cao.awa.cason.codec.JSONCodec
+
+fun main() {
+    println(
+        JSONCodec.decode<Empty>(
+            JSONObject {
+                "value" set "Test"
+                "test_id" set 1234
+
+                json("inner_data") {
+                    "inner_string" set "Test inner"
+                }
+            }.build()
+        )
+    )
+}
+
+data class Empty(
+    val value: String,
+    @param:Mapper("test_id")
+    val testId: Int,
+    @param:Data
+    @param:Mapper("inner_data")
+    val innerData: TestInnerData
+) {
+    init {
+        require(this.value.isNotEmpty())
+        require(this.testId == 1234)
+    }
+}
+
+data class TestInnerData(@param:Mapper("inner_string") val innerString: String)
+```
+
 # API Overview
 
 Core Classes
@@ -195,13 +231,21 @@ Core Classes
 * JSONArray: Mutable JSON array implementation
 * JSONElement: Base class for all JSON elements
 * JSONSettings: Configuration for parsing and serializing
+* JSONCodec: Decode a JSON data to a refiled object or Encode a refiled object to a JSON data
+* JSONDecoder: Decode a JSON data to a refiled object
+* JSONEncoder: Encode a refiled object to a JSON data
 
 ## Configuration
 
 ```kotlin
-JSONSettings.preferSingleQuote = true
-JSONSettings.prettyFormat = true
+fun main() {
+    JSONSettings.preferSingleQuote = true
+    JSONSettings.prettyFormat = true
+}
 ```
+
+## More samples
+See [Test codec](/src/test/kotlin/Main.kt).
 
 # Build
 ## Building from Source
