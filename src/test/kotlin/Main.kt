@@ -9,7 +9,7 @@ import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 fun main() {
-    parsing()
+    serialization()
 }
 
 fun serialization() {
@@ -18,6 +18,8 @@ fun serialization() {
             JSONObject {
                 "value" set "Test"
                 "test_id" set 1234
+
+                println(getInt("test_id"))
 
                 json("inner_data") {
                     "inner_string" set "Test inner"

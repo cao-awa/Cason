@@ -151,6 +151,7 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     }
 
     private fun getElement(key: String): Any? {
+        completePending()
         return this.map[key]
     }
 

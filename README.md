@@ -225,6 +225,21 @@ data class TestInnerData(@Field("inner_string") val innerString: String)
 ```
 
 ## Notice
+It's best not to get the data that just recent set to in DSL:
+```kotlin
+import com.github.cao.awa.cason.obj.JSONObject
+
+fun test(data: JSONObject) {
+    data.instruct {
+        "key" set "value"
+        
+        // Value will not be null but data stream will be completed,
+        // validate or other intermediate operations will complete here.
+        getString("value")
+    }
+}
+```
+
 Using ```instruct``` method instead of ```apply``` to into the DSL phase:
 ```kotlin
 import com.github.cao.awa.cason.obj.JSONObject
