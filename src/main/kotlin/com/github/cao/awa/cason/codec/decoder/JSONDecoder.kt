@@ -1,8 +1,8 @@
 package com.github.cao.awa.cason.codec.decoder
 
 import com.github.cao.awa.cason.codec.JSONCodec
-import com.github.cao.awa.cason.codec.annotation.Nested
-import com.github.cao.awa.cason.codec.annotation.Field
+import com.github.cao.awa.cason.annotation.Nested
+import com.github.cao.awa.cason.annotation.Field
 import com.github.cao.awa.cason.obj.JSONObject
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter

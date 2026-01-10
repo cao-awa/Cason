@@ -1,6 +1,6 @@
 # Cason
 
-**Cason** is a lightweight, high-performance JSON/JSON5 parsing library for Kotlin, built with Gradle and distributed under the GPLv3 license.
+**Cason** is a lightweight, high-performance JSON/JSON5 parsing library for Kotlin with expressive DSL.
 
 ## Features
 
@@ -125,7 +125,7 @@ fun main() {
             "version": "1.0.0",
             "features": ["json", "json5", "kotlin"]
         }
-    """.trimIndent()
+    """
 
     val jsonObject = JSONParser.parseObject(jsonString)
     
@@ -171,13 +171,13 @@ import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 fun main() {
     val data = JSONObject {
-        put("name", "Cason")
-        put("version", "1.0.0")
+        "name" set "Cason"
+        "version" set "1.0.0"
         array("keywords") {
-            add("kotlin")
-            add("json")
-            add("json5")
-            add("parser")
+            +"kotlin"
+            +"json"
+            +"json5"
+            +"parser"
         }
     }
     
@@ -200,7 +200,7 @@ fun main() {
                 json("inner_data") {
                     "inner_string" set "Test inner"
                 }
-            }.build()
+            }
         ).also {
             println(JSONCodec.encode(it))
         }
@@ -222,6 +222,23 @@ data class Empty(
 }
 
 data class TestInnerData(@Field("inner_string") val innerString: String)
+```
+
+## Notice
+Using ```instruct``` method instead of ```apply``` to into the DSL phase:
+```kotlin
+import com.github.cao.awa.cason.obj.JSONObject
+
+fun test(data: JSONObject) {
+    data.instruct {
+        "key" set "value"
+    }
+    
+    // Don't do this, otherwise calls 'completePending' manually.
+    data.apply {
+        "key" set "value"
+    }.completePending()
+}
 ```
 
 # API Overview

@@ -1,6 +1,6 @@
 import com.github.cao.awa.cason.codec.JSONCodec
-import com.github.cao.awa.cason.codec.annotation.Nested
-import com.github.cao.awa.cason.codec.annotation.Field
+import com.github.cao.awa.cason.annotation.Nested
+import com.github.cao.awa.cason.annotation.Field
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
@@ -22,7 +22,7 @@ fun serialization() {
                 json("inner_data") {
                     "inner_string" set "Test inner"
                 }
-            }.build()
+            }
         ).also {
             println(JSONCodec.encode(it))
         }
@@ -86,7 +86,7 @@ fun path() {
                 +"qwq"
             }
         }
-    }.build()
+    }
 
     println(JSONWriter.stringify(json, pretty = true))
 }
@@ -161,7 +161,7 @@ fun parsing() {
     "use_action": "eat"
   }
 }
-    """.trimIndent()
+    """
 
     val testCount = 100000
 

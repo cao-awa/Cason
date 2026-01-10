@@ -18,7 +18,13 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     private val pendingData: MutableList<DataStream<*>> = ArrayList()
 
     constructor(body: JSONObject.() -> Unit) : this(LinkedHashMap<String, JSONElement>()) {
+        instruct(body)
+    }
+
+    fun instruct(body: JSONObject.() -> Unit): JSONObject {
         body(this)
+        completePending()
+        return this
     }
 
     fun array(body: JSONArray.() -> Unit): JSONArray = JSONArray(body)
@@ -111,12 +117,12 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
         }
     }
 
-    fun build(): JSONObject {
+    fun completePending(): JSONObject {
         this.pendingData.forEach(DataStream<*>::commit)
         this.pendingData.clear()
 
         this.map.forEach { (_, value) ->
-            (value as? JSONObject)?.build()
+            (value as? JSONObject)?.completePending()
         }
 
         return this
