@@ -81,16 +81,11 @@ Benchmarks parsing a small elements object, repeat 10000 times to widen the perf
 </details>
 
 ## Installation
-Cason can be installed from GitHub Packages by adding the following repository:
+Cason can be installed from JitPack by adding the following repository:
 ```groovy
 repositories {
     maven {
-        name = "GitHubPackages"
-        url = "https://maven.pkg.github.com/cao-awa/Cason"
-        credentials {
-            username = "<your-username>"
-            password = "<your-github-token>"
-        }
+        url 'https://jitpack.io'
     }
 }
 ```
@@ -99,7 +94,7 @@ repositories {
 
 ```kotlin
 dependencies {
-    implementation("com.github.cao.awa:cason:1.0.0")
+    implementation("com.github.cao.awa:cason:{CASON_VERSION}")
 }
 ```
 
@@ -107,7 +102,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'com.github.cao.awa:cason:1.0.0'
+    implementation 'com.github.cao.awa:cason:{CASON_VERSION}'
 }
 ```
 
