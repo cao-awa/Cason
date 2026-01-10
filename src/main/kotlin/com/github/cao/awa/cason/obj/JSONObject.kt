@@ -5,6 +5,7 @@ package com.github.cao.awa.cason.obj
 import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
 import com.github.cao.awa.cason.primary.JSONBoolean
+import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.setting.JSONSettings
@@ -32,6 +33,7 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
         put(key, it)
     }
 
+    fun putNull(key: String) = putElement(key, JSONNull)
     fun put(key: String, value: JSONObject): JSONObject = putElement(key, value)
     fun put(key: String, value: JSONArray): JSONObject = putElement(key, value)
     fun put(key: String, value: String): JSONObject = putElement(key, JSONString(value))

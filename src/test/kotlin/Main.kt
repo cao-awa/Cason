@@ -1,6 +1,7 @@
-import com.github.cao.awa.cason.codec.annotation.Data
-import com.github.cao.awa.cason.codec.annotation.Mapper
+import com.github.cao.awa.cason.codec.annotation.Nested
+import com.github.cao.awa.cason.codec.annotation.Field
 import com.github.cao.awa.cason.codec.decoder.JSONDecoder
+import com.github.cao.awa.cason.codec.encoder.JSONEncoder
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
@@ -18,16 +19,18 @@ fun main() {
                     "inner_string" set "Test inner"
                 }
             }.build()
-        )
+        ).also {
+            println(JSONEncoder.encode(it))
+        }
     )
 }
 
 data class Empty(
     val value: String,
-    @param:Mapper("test_id")
+    @Field("test_id")
     val testId: Int,
-    @param:Data
-    @param:Mapper("inner_data")
+    @Nested
+    @Field("inner_data")
     val innerData: TestInnerData
 ) {
     init {
@@ -36,7 +39,7 @@ data class Empty(
     }
 }
 
-data class TestInnerData(@param:Mapper("inner_string") val innerString: String)
+data class TestInnerData(@Field("inner_string") val innerString: String)
 
 fun path() {
     val testId = 1
