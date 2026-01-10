@@ -191,7 +191,7 @@ import com.github.cao.awa.cason.codec.JSONCodec
 
 fun main() {
     println(
-        JSONCodec.decode<Empty>(
+        JSONDecoder.decode<Empty>(
             JSONObject {
                 "value" set "Test"
                 "test_id" set 1234
@@ -200,16 +200,18 @@ fun main() {
                     "inner_string" set "Test inner"
                 }
             }.build()
-        )
+        ).also {
+            println(JSONEncoder.encode(it))
+        }
     )
 }
 
 data class Empty(
     val value: String,
-    @param:Mapper("test_id")
+    @Field("test_id")
     val testId: Int,
-    @param:Data
-    @param:Mapper("inner_data")
+    @Nested
+    @Field("inner_data")
     val innerData: TestInnerData
 ) {
     init {
@@ -218,7 +220,7 @@ data class Empty(
     }
 }
 
-data class TestInnerData(@param:Mapper("inner_string") val innerString: String)
+data class TestInnerData(@Field("inner_string") val innerString: String)
 ```
 
 # API Overview

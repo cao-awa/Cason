@@ -33,7 +33,7 @@ object JSONDecoder {
 
         val properties: MutableMap<String, KProperty1<*, *>> = type.declaredMemberProperties.let { properties ->
             val map: MutableMap<String, KProperty1<*, *>> = mutableMapOf()
-            for (property in properties) {
+            properties.forEach { property ->
                 map[property.name] = property
             }
             map
@@ -45,8 +45,7 @@ object JSONDecoder {
             } ?: parameter.name ?: throw IllegalStateException("Unable to decode property '${parameter.name}'")
 
             parameters[parameter] = run {
-                val isInnerData = properties[parameter.name]?.findAnnotation<Nested>() != null
-                if (isInnerData) {
+                if (properties[parameter.name]?.findAnnotation<Nested>() != null) {
                     decodeDataClass(data.getJSON(name)!!, parameter.type.jvmErasure)
                 } else {
                     JSONCodec.getAdapter(data, name, parameter.type)
