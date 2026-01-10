@@ -19,11 +19,9 @@ fun serialization() {
                 "value" set "Test"
                 "test_id" set 1234
 
-                println(getInt("test_id"))
-
-                json("inner_data") {
-                    "inner_string" set "Test inner"
-                }
+                "test_nested" nested TestNested("Awa")
+            }.also {
+                println(it)
             }
         ).also {
             println(JSONCodec.encode(it))
@@ -36,8 +34,8 @@ data class Empty(
     @Field("test_id")
     val testId: Int,
     @Nested
-    @Field("inner_data")
-    val innerData: TestInnerData
+    @Field("test_nested")
+    val innerData: TestNested
 ) {
     init {
         require(this.value.isNotEmpty())
@@ -45,7 +43,7 @@ data class Empty(
     }
 }
 
-data class TestInnerData(@Field("inner_string") val innerString: String)
+data class TestNested(@Field("inner_string") val innerString: String)
 
 fun path() {
     val testId = 1

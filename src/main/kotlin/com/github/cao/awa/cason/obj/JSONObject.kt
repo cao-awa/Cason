@@ -3,7 +3,10 @@
 package com.github.cao.awa.cason.obj
 
 import com.github.cao.awa.cason.JSONElement
+import com.github.cao.awa.cason.annotation.CallOnlyInternal
 import com.github.cao.awa.cason.array.JSONArray
+import com.github.cao.awa.cason.codec.decoder.JSONDecoder
+import com.github.cao.awa.cason.codec.encoder.JSONEncoder
 import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONNumber
@@ -39,6 +42,8 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
         put(key, it)
     }
 
+    inline fun <reified T: Any> nested(key: String, back: () -> T): JSONObject = putNested(key, back())
+
     fun putNull(key: String) = putElement(key, JSONNull)
     fun put(key: String, value: JSONObject): JSONObject = putElement(key, value)
     fun put(key: String, value: JSONArray): JSONObject = putElement(key, value)
@@ -50,6 +55,12 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     fun put(key: String, value: Long): JSONObject = putElement(key, JSONNumber.ofLong(value))
     fun put(key: String, value: Float): JSONObject = putElement(key, JSONNumber.ofFloat(value))
     fun put(key: String, value: Double): JSONObject = putElement(key, JSONNumber.ofDouble(value))
+    inline fun <reified T: Any> putNested(key: String, value: T): JSONObject {
+        JSONEncoder.encode(value).also {
+            put(key, it)
+        }
+        return this
+    }
 
     infix fun String.set(value: JSONObject): DataStream<JSONObject> = pendingData(value) { put(this, it) }
     infix fun String.set(value: JSONArray): DataStream<JSONArray> = pendingData(value) { put(this, it) }
@@ -61,6 +72,7 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     infix fun String.set(value: Long): DataStream<Long> = pendingData(value) { put(this, it) }
     infix fun String.set(value: Float): DataStream<Float> = pendingData(value) { put(this, it) }
     infix fun String.set(value: Double): DataStream<Double> = pendingData(value) { put(this, it) }
+    inline infix fun <reified T: Any> String.nested(value: T): DataStream<T> = pendingData(value) { putNested(this, it) }
 
     fun string(value: () -> String): String = value()
     fun bool(value: () -> Boolean): Boolean = value()
@@ -70,6 +82,7 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     fun long(value: () -> Long): Long = value()
     fun float(value: () -> Float): Float = value()
     fun double(value: () -> Double): Double = value()
+    inline fun <reified T: Any> nested(value: () -> T): T = value()
 
     private fun putElement(key: String, value: JSONElement): JSONObject {
         this.map[key] = value
@@ -86,6 +99,11 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     fun getLong(key: String): Long? = (getElement(key) as? JSONNumber)?.asLong()
     fun getFloat(key: String): Float? = (getElement(key) as? JSONNumber)?.asFloat()
     fun getDouble(key: String): Double? = (getElement(key) as? JSONNumber)?.asDouble()
+    inline fun <reified T : Any> getNested(key: String): T? {
+        return getJSON(key)?.let {
+            JSONDecoder.decode<T>(it)
+        }
+    }
 
     fun getArray(key: String, back: () -> JSONArray): JSONArray = getElement(key) as? JSONArray ?: back()
     fun getJSON(key: String, back: () -> JSONObject): JSONObject = getElement(key) as? JSONObject ?: back()
@@ -97,6 +115,11 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     fun getLong(key: String, back: () -> Long): Long = (getElement(key) as? JSONNumber)?.asLong() ?: back()
     fun getFloat(key: String, back: () -> Float): Float = (getElement(key) as? JSONNumber)?.asFloat() ?: back()
     fun getDouble(key: String, back: () -> Double): Double = (getElement(key) as? JSONNumber)?.asDouble() ?: back()
+    inline fun <reified T : Any> getNested(key: String, back: () -> T): T {
+        return getJSON(key)?.let {
+            JSONDecoder.decode<T>(it)
+        } ?: back()
+    }
 
     fun isPresent(key: String): Boolean = this.map.containsKey(key)
 
@@ -110,8 +133,10 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     fun computeLong(key: String, back: (Long?) -> Long): JSONObject = put(key, back(getLong(key)))
     fun computeFloat(key: String, back: (Float?) -> Float): JSONObject = put(key, back(getFloat(key)))
     fun computeDouble(key: String, back: (Double?) -> Double): JSONObject = put(key, back(getDouble(key)))
+    inline fun <reified T : Any> computeNested(key: String, back: (T?) -> T) = putNested(key, back(getNested(key)))
 
-    private fun <T> pendingData(rawData: T, finalize: (T) -> Unit): DataStream<T> {
+    @CallOnlyInternal
+    fun <T> pendingData(rawData: T, finalize: (T) -> Unit): DataStream<T> {
         return DataStream(rawData, finalize).also {
             this.pendingData.add(it)
         }

@@ -256,6 +256,26 @@ fun test(data: JSONObject) {
 }
 ```
 
+Using ```nested``` to put a data class into JSONObject and get with ```getNested```:
+
+```kotlin
+fun test() {
+    JSONObject {
+        "test_value" set "Test"
+        "test_id" set 1234
+        
+        // Use 'nested' to auto encode to JSONObject.
+        "test_nested" nested TestNested("Awa")
+    }.also { data: JSONObject ->
+        // Use 'getNested' to auto decode from JSONObject.
+        val nested = data.getNested<TestNested>("test_nested")
+        println(nested)
+    }
+}
+
+data class TestNested(val name: String)
+```
+
 # API Overview
 
 Core Classes
