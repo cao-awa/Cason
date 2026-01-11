@@ -9,4 +9,6 @@ data object JSONNull : JSONElement {
     override fun isString(): Boolean = false
     override fun isNull(): Boolean = true
     override fun isBoolean(): Boolean = false
+
+    override fun toString(): String = "null"
 }

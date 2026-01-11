@@ -11,4 +11,6 @@ data class JSONString(private val value: String) : JSONElement {
     override fun isString(): Boolean = true
     override fun isNull(): Boolean = false
     override fun isBoolean(): Boolean = false
+
+    override fun toString(): String = "\"$value\""
 }

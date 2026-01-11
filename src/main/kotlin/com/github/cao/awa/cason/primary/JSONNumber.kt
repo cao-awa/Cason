@@ -1,7 +1,7 @@
 package com.github.cao.awa.cason.primary
 
 import com.github.cao.awa.cason.JSONElement
-import com.github.cao.awa.cason.number.CasonNumber
+import com.github.cao.awa.cason.primary.number.CasonNumber
 import java.math.BigDecimal
 
 data class JSONNumber(val number: CasonNumber) : JSONElement {

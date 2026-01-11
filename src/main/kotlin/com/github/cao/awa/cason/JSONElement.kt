@@ -77,4 +77,15 @@ interface JSONElement {
      * @since 1.0.0
      */
     fun isBoolean(): Boolean
+
+    /**
+     * Returns the string representation of this JSON element.
+     *
+     * @return string representation of this JSON element
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.16
+     */
+    override fun toString(): String
 }

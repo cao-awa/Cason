@@ -1,4 +1,4 @@
-package com.github.cao.awa.cason.number
+package com.github.cao.awa.cason.primary.number
 
 import java.math.BigDecimal
 

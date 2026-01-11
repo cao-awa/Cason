@@ -5,7 +5,7 @@ import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
 import com.github.cao.awa.cason.exception.JSONParseException
 import com.github.cao.awa.cason.exception.NeedMoreInputException
-import com.github.cao.awa.cason.number.CasonNumber
+import com.github.cao.awa.cason.primary.number.CasonNumber
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONNull

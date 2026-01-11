@@ -14,4 +14,6 @@ data class JSONBoolean(val value: Boolean) : JSONElement {
     override fun isString(): Boolean = false
     override fun isNull(): Boolean = false
     override fun isBoolean(): Boolean = true
+
+    override fun toString(): String = this.value.toString()
 }
