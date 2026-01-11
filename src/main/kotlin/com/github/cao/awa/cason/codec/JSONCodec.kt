@@ -16,6 +16,23 @@ object JSONCodec {
         return JSONEncoder.encode(data)
     }
 
+    fun encodeJSON(data: JSONObject): String {
+        return JSONEncoder.encodeJSON(data)
+    }
+
+
+    fun encodeJSON(data: JSONObject, pretty: Boolean = false): String {
+        return JSONEncoder.encodeJSON(data, pretty)
+    }
+
+    fun encodeArray(data: JSONArray): String {
+        return data.toString()
+    }
+
+    fun encodeArray(data: JSONArray, pretty: Boolean): String {
+        return data.toString(pretty, "    ", 0)
+    }
+
     fun setAdapter(name: String, data: Any?, json: JSONObject) {
         if (data == null) {
             json.putNull(name)

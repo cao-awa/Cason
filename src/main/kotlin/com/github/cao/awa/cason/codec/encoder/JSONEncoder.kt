@@ -39,7 +39,15 @@ object JSONEncoder {
         return data.toString()
     }
 
+    fun encodeJSON(data: JSONObject, pretty: Boolean): String {
+        return data.toString(pretty, "    ", 0)
+    }
+
     fun encodeArray(data: JSONArray): String {
         return data.toString()
+    }
+
+    fun encodeArray(data: JSONArray, pretty: Boolean): String {
+        return data.toString(pretty, "    ", 0)
     }
 }
