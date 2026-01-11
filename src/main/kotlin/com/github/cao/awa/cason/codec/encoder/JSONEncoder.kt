@@ -23,4 +23,8 @@ object JSONEncoder {
 
         throw IllegalStateException("Cannot encode '${type.qualifiedName}' to JSON because it is not a data class")
     }
+
+    inline fun <reified T: Any> encodeToString(data: T): String {
+        return encode(data).toString()
+    }
 }

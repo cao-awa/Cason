@@ -4,6 +4,7 @@ import com.github.cao.awa.cason.codec.JSONCodec
 import com.github.cao.awa.cason.annotation.Nested
 import com.github.cao.awa.cason.annotation.Field
 import com.github.cao.awa.cason.obj.JSONObject
+import com.github.cao.awa.cason.serialize.parser.JSONParser
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
 import kotlin.reflect.KProperty1
@@ -14,6 +15,11 @@ import kotlin.reflect.jvm.jvmErasure
 
 @Suppress("unchecked_cast")
 object JSONDecoder {
+    inline fun <reified T: Any> decode(data: String, forceType: KClass<*>? = null): T {
+        val json = JSONParser.parseObject(data)
+        return decode(json, forceType)
+    }
+
     inline fun <reified T : Any> decode(data: JSONObject, forceType: KClass<*>? = null): T {
         val type: KClass<T> = forceType?.let {
             forceType as KClass<T>
