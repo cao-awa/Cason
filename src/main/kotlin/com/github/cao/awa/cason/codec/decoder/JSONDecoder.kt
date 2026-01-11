@@ -52,15 +52,25 @@ object JSONDecoder {
             } ?: parameterName ?: error("Unable to decode property '${parameterName}'")
 
             parameters[parameter] = run {
+                var result: Any?
                 if (properties[parameterName]?.findAnnotation<Nested>() != null) {
-                    val json = data.getJSON(name) ?: error("Unable to decode property '${type.simpleName}' because required field '$name' is missing")
-                    decodeDataClass(json, parameter.type.jvmErasure)
+                    val json = data.getJSON(name)
+
+                    result = if (json != null) {
+                        decodeDataClass(json, parameter.type.jvmErasure)
+                    } else if (!parameter.type.isMarkedNullable) {
+                        error("Unable to decode property '${type.simpleName}' because required field '$name' is missing")
+                    } else {
+                        null
+                    }
                 } else {
                     if (parameter.type.jvmErasure.isData) {
                         error("Unable to decode property '${parameterName}'($name) because this data class missing @Nested annotation")
                     }
-                    JSONCodec.getAdapter(data, name, parameter.type)
+                    result = JSONCodec.getAdapter(data, name, parameter.type)
                 }
+
+                result
             }
         }
 
