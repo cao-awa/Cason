@@ -92,19 +92,19 @@ object JSONEncoder {
         return encode(data).toString()
     }
 
-    fun encodeJSON(data: JSONObject): String {
+    fun renderJSON(data: JSONObject): String {
         return data.toString()
     }
 
-    fun encodeJSON(data: JSONObject, pretty: Boolean): String {
+    fun renderJSON(data: JSONObject, pretty: Boolean): String {
         return data.toString(pretty, "    ", 0)
     }
 
-    fun encodeArray(data: JSONArray): String {
+    fun renderArray(data: JSONArray): String {
         return data.toString()
     }
 
-    fun encodeArray(data: JSONArray, pretty: Boolean): String {
+    fun renderArray(data: JSONArray, pretty: Boolean): String {
         return data.toString(pretty, "    ", 0)
     }
 }

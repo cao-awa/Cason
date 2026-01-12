@@ -14,24 +14,28 @@ object JSONCodec {
         return JSONDecoder.decode(data)
     }
 
-    fun encode(data: Any): JSONObject {
-        return JSONEncoder.encode(data)
+    inline fun <reified T: Any> encode(data: T): JSONObject {
+        return JSONEncoder.encode<T>(data)
     }
 
-    fun encodeJSON(data: JSONObject): String {
-        return JSONEncoder.encodeJSON(data)
+    fun encodeAny(data: Any): JSONObject {
+        return JSONEncoder.encodeAny(data, data::class)
+    }
+
+    fun renderJSON(data: JSONObject): String {
+        return JSONEncoder.renderJSON(data)
     }
 
 
-    fun encodeJSON(data: JSONObject, pretty: Boolean = false): String {
-        return JSONEncoder.encodeJSON(data, pretty)
+    fun renderJSON(data: JSONObject, pretty: Boolean = false): String {
+        return JSONEncoder.renderJSON(data, pretty)
     }
 
-    fun encodeArray(data: JSONArray): String {
+    fun renderArray(data: JSONArray): String {
         return data.toString()
     }
 
-    fun encodeArray(data: JSONArray, pretty: Boolean): String {
+    fun renderArray(data: JSONArray, pretty: Boolean = false): String {
         return data.toString(pretty, "    ", 0)
     }
 

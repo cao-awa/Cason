@@ -1,6 +1,7 @@
 import com.github.cao.awa.cason.codec.JSONCodec
 import com.github.cao.awa.cason.annotation.Field
 import com.github.cao.awa.cason.annotation.Flattened
+import com.github.cao.awa.cason.annotation.Nested
 import com.github.cao.awa.cason.codec.encoder.JSONEncoder
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
@@ -10,46 +11,37 @@ import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 fun main() {
-    serialization()
-}
-
-fun serialization() {
-    val json: JSONObject = JSONEncoder.encode<Struct>(
-        Struct(
-            "value-awa",
-            123,
-            TestNested(
-                "value-qaq",
-                456
-            )
-        )
-    )
-
     println(
-        JSONCodec.decode<Struct>(
-            json.also {
-                println(it)
+        JSONCodec.decode<Empty>(
+            JSONObject {
+                "value" set "awa"
+                "test_id" set 1234
+
+                json("inner_data") {
+                    "inner_string" set "inner-awa"
+                }
             }
         ).also {
-            println(JSONCodec.encode(it))
+            println(JSONCodec.encodeAny(it))
         }
     )
 }
 
-data class Struct(
+data class Empty(
     val value: String,
     @Field("test_id")
     val testId: Int,
-    @Flattened
-    val innerData: TestNested
-)
+    @Nested
+    @Field("inner_data")
+    val innerData: TestInnerData
+) {
+    init {
+        require(this.value.isNotEmpty())
+        require(this.testId == 1234)
+    }
+}
 
-data class TestNested(
-    @Field("inner_string")
-    val innerString: String,
-    @Field("inner_int")
-    val innerInt: Int
-)
+data class TestInnerData(@Field("inner_string") val innerString: String)
 
 fun path() {
     val testId = 1

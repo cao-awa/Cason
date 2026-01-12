@@ -19,7 +19,8 @@ Cason parser based on implicit state machine, optimized for real-world usage sce
 - **vs fastjson2**: Slightly slower for pure throughput but more memory efficient
 - **JSON5**: Competitive parsing speed with excellent error recovery
 
-Benchmarks parsing a small elements object, repeat 10000 times to widen the performance gap. For most applications, Cason provides an excellent balance of speed, features, and maintainability.
+Benchmarks parsing a small elements object, repeat 10000 times to widen the performance gap. For most applications,
+Cason provides an excellent balance of speed, features, and maintainability.
 
 <details>
 
@@ -73,6 +74,7 @@ Benchmarks parsing a small elements object, repeat 10000 times to widen the perf
 ```
 
 ### Test result (parsing speed)
+
 * **Cason**: 229ms
 * **Cason (Strict mode)**: 173ms
 * **fastjson2**: 131ms
@@ -81,7 +83,9 @@ Benchmarks parsing a small elements object, repeat 10000 times to widen the perf
 </details>
 
 ## Installation
+
 Cason can be installed from JitPack by adding the following repository:
+
 ```groovy
 repositories {
     maven {
@@ -123,11 +127,11 @@ fun main() {
     """
 
     val jsonObject = JSONParser.parseObject(jsonString)
-    
+
     val name = jsonObject.getString("name")
     val version = jsonObject.getString("version")
     val features = jsonObject.getArray("features")
-    
+
     println("Library: $name v$version")
     println("Features: ${features.toList()}")
 }
@@ -153,7 +157,7 @@ fun main() {
     """.trimIndent()
 
     val jsonObject = JSONParser.parseObject(json5String)
-    
+
     // Use the parsed data...
 }
 ```
@@ -175,59 +179,129 @@ fun main() {
             +"parser"
         }
     }
-    
+
     val jsonString = JSONWriter.stringify(data, pretty = true)
     println(jsonString)
 }
 ```
 
 ## Class construction
+
 ```kotlin
+import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.codec.JSONCodec
 
 fun main() {
-    println(
-        JSONCodec.decode<Empty>(
-            JSONObject {
-                "value" set "Test"
-                "test_id" set 1234
+    val json = JSONObject {
+        "value" set "awa"
+        "test_id" set 1234
 
-                json("inner_data") {
-                    "inner_string" set "Test inner"
-                }
-            }
+        json("inner_data") {
+            "inner_string" set "inner-awa"
+        }
+    }
+    
+    println(
+        JSONCodec.decode<Struct>(
+            json
         ).also {
-            println(JSONCodec.encode(it))
+            println(JSONCodec.encodeAny(it))
         }
     )
 }
 
-data class Empty(
+data class Struct(
     val value: String,
     @Field("test_id")
     val testId: Int,
     @Nested
     @Field("inner_data")
     val innerData: TestInnerData
-) {
-    init {
-        require(this.value.isNotEmpty())
-        require(this.testId == 1234)
-    }
+)
+
+data class TestInnerData(
+    @Field("inner_string")
+    val innerString: String
+)
+```
+
+The serialization test will get these output:
+```json
+{"inner_data":{"inner_string":"inner-awa"},"test_id":1234,"value":"awa"}
+```
+
+```kotlin
+Empty(value=awa, testId=1234, innerData=TestInnerData(innerString=inner-awa))
+```
+
+## Flatten
+
+```kotlin
+import com.github.cao.awa.cason.obj.JSONObject
+import com.github.cao.awa.cason.codec.JSONCodec
+
+fun main() {
+    val json: JSONObject = JSONCodec.encode<Struct>(
+        Struct(
+            "value-awa",
+            123,
+            TestNested(
+                "value-qaq",
+                456
+            )
+        )
+    )
+
+    println(
+        JSONCodec.decode<Struct>(
+            json
+        ).also {
+            println(JSONCodec.encodeAny(it))
+        }
+    )
 }
 
-data class TestInnerData(@Field("inner_string") val innerString: String)
+data class Struct(
+    val value: String,
+    @Field("test_id")
+    val testId: Int,
+    @Flattened
+    val innerData: TestNested
+)
+
+data class TestNested(
+    @Field("inner_string")
+    val innerString: String,
+    @Field("inner_int")
+    val innerInt: Int
+)
+```
+
+The flattened test will get these output:
+
+```json
+{
+  "inner_int": 456,
+  "inner_string": "value-qaq",
+  "test_id": 123,
+  "value": "value-awa"
+}
+```
+```kotlin
+Struct(value=value-awa, testId=123, innerData=TestNested(innerString=value-qaq, innerInt=456))
 ```
 
 ## Notice
+
 It's best not to get the data that just recent set to in DSL:
+
 ```kotlin
 import com.github.cao.awa.cason.obj.JSONObject
 
 fun test(data: JSONObject) {
     data.instruct {
         "key" set "value"
-        
+
         // Value will not be null but data stream will be completed,
         // validate or other intermediate operations will complete here.
         getString("value")
@@ -236,6 +310,7 @@ fun test(data: JSONObject) {
 ```
 
 Using ```instruct``` method instead of ```apply``` to into the DSL phase:
+
 ```kotlin
 import com.github.cao.awa.cason.obj.JSONObject
 
@@ -243,7 +318,7 @@ fun test(data: JSONObject) {
     data.instruct {
         "key" set "value"
     }
-    
+
     // Don't do this, otherwise calls 'completePending' manually.
     data.apply {
         "key" set "value"
@@ -258,7 +333,7 @@ fun test() {
     JSONObject {
         "test_value" set "Test"
         "test_id" set 1234
-        
+
         // Use 'nested' to auto encode to JSONObject.
         "test_nested" nested TestNested("Awa")
     }.also { data: JSONObject ->
@@ -273,6 +348,7 @@ data class TestNested(val name: String)
 ```
 
 The nested is a data, DSL body cannot insert other element into it:
+
 ```kotlin
 fun test() {
     JSONObject {
@@ -281,8 +357,8 @@ fun test() {
             // Nested object should always const, no dynamic element insertions.
             // So this is an unexpected behaviors, cannot put other element into nested body.
             // This set call will insert "value" to the parent JSONObject instead of nested object.
-            "key" set "value" 
-            
+            "key" set "value"
+
             // Getter style to construct the nested object is 
             // design to something intermediate operations like fetch to databases.
             // Not for constructing a dynamic object.
@@ -318,9 +394,11 @@ fun main() {
 ```
 
 ## More samples
+
 See [Test codec](/src/test/kotlin/Main.kt).
 
 # Build
+
 ## Building from Source
 
 ```bash
@@ -348,7 +426,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (git push origin feature/amazing-feature)
 5. Open a Pull Request
 
- # Support
+# Support
 
 * [Issue Tracker](https://github.com/cao-awa/Cason/issues)
 * [Documentation](https://github.com/cao-awa/Cason/tree/main/document)
