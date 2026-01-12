@@ -304,7 +304,7 @@ fun test(data: JSONObject) {
 
         // Value will not be null but data stream will be completed,
         // validate or other intermediate operations will complete here.
-        getString("value")
+        getString("key")
     }
 }
 ```
