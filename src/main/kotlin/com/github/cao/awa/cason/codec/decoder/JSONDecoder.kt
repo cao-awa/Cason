@@ -3,17 +3,17 @@ package com.github.cao.awa.cason.codec.decoder
 import com.github.cao.awa.cason.codec.JSONCodec
 import com.github.cao.awa.cason.annotation.Nested
 import com.github.cao.awa.cason.annotation.Field
+import com.github.cao.awa.cason.annotation.Flattened
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
-import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.jvmErasure
 
-@Suppress("unchecked_cast")
+@Suppress("unchecked_cast", "unused")
 object JSONDecoder {
     inline fun <reified T: Any> decode(data: String, forceType: KClass<*>? = null): T {
         val json = JSONParser.parseObject(data)
@@ -35,43 +35,76 @@ object JSONDecoder {
     fun decodeDataClass(data: JSONObject, type: KClass<*>): Any {
         val parameters: MutableMap<KParameter, Any?> = mutableMapOf()
 
-        val constructor = type.primaryConstructor!!
+        val constructor = type.primaryConstructor ?: error("Data class '${type.qualifiedName}' must have a primary constructor")
 
-        val properties: MutableMap<String, KProperty1<*, *>> = type.declaredMemberProperties.let { properties ->
-            val map: MutableMap<String, KProperty1<*, *>> = mutableMapOf()
-            properties.forEach { property ->
-                map[property.name] = property
-            }
-            map
+        val properties = type.declaredMemberProperties.associateBy {
+            it.name
         }
 
         constructor.parameters.forEach { parameter ->
-            val parameterName = parameter.name
-            val name = properties[parameterName]?.let {
-                it.findAnnotation<Field>()?.name
-            } ?: parameterName ?: error("Unable to decode property '${parameterName}'")
+            val parameterName = parameter.name ?: error("Unnamed constructor parameter in '${type.simpleName}'")
 
-            parameters[parameter] = run {
-                var result: Any?
-                if (properties[parameterName]?.findAnnotation<Nested>() != null) {
-                    val json = data.getJSON(name)
+            val property = properties[parameterName]
 
-                    result = if (json != null) {
-                        decodeDataClass(json, parameter.type.jvmErasure)
-                    } else if (!parameter.type.isMarkedNullable) {
-                        error("Unable to decode property '${type.simpleName}' because required field '$name' is missing")
-                    } else {
-                        null
+            val nested = property?.findAnnotation<Nested>()
+            val flattened = property?.findAnnotation<Flattened>()
+
+            // Check conflicts, @Nested cannot use with @Flattened.
+            if (nested != null && flattened != null) {
+                error(
+                    "Property '${type.simpleName}.$parameterName' cannot be annotated with both @Nested and @Flattened"
+                )
+            }
+
+            val jsonName = property?.findAnnotation<Field>()?.name ?: parameterName
+
+            val value = when {
+                // Nested.
+                nested != null -> {
+                    val json = data.getJSON(jsonName)
+
+                    when {
+                        json != null ->
+                            decodeDataClass(json, parameter.type.jvmErasure)
+
+                        parameter.type.isMarkedNullable ->
+                            null
+
+                        else ->
+                            error(
+                                "Unable to decode property '${type.simpleName}.$parameterName' " +
+                                        "because required field '$jsonName' is missing"
+                            )
                     }
-                } else {
-                    if (parameter.type.jvmErasure.isData) {
-                        error("Unable to decode property '${parameterName}'($name) because this data class missing @Nested annotation")
-                    }
-                    result = JSONCodec.getAdapter(data, name, parameter.type)
                 }
 
-                result
+                // Flattened.
+                flattened != null -> {
+                    if (!parameter.type.jvmErasure.isData) {
+                        error(
+                            "@Flattened can only be applied to data class properties: " +
+                                    "'${type.simpleName}.$parameterName'"
+                        )
+                    }
+
+                    decodeDataClass(data, parameter.type.jvmErasure)
+                }
+
+                // Default forbid data class.
+                parameter.type.jvmErasure.isData -> {
+                    error(
+                        "Unable to decode property '${type.simpleName}.$parameterName' " +
+                                "because data class properties must be annotated with @Nested or @Flattened"
+                    )
+                }
+
+                // Normal field.
+                else -> {
+                    JSONCodec.getAdapter(data, jsonName, parameter.type)
+                }
             }
+
+            parameters[parameter] = value
         }
 
         return constructor.callBy(parameters)

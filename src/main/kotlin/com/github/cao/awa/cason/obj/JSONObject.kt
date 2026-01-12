@@ -152,6 +152,32 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     fun putNull(key: String) = putElement(key, JSONNull)
 
     /**
+     * Put a nested [JSONNumber] value at [key].
+     *
+     * @param key the key to insert the number at
+     * @param value the [JSONNumber] value to insert
+     * @return this JSONNumber for chaining
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
+    fun put(key: String, value: JSONNumber): JSONObject = putElement(key, value)
+
+    /**
+     * Put a nested [JSONString] value at [key].
+     *
+     * @param key the key to insert the string at
+     * @param value the [JSONString] value to insert
+     * @return this JSONString for chaining
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
+    fun put(key: String, value: JSONString): JSONObject = putElement(key, value)
+
+    /**
      * Put a nested [JSONObject] value at [key].
      *
      * @param key the key to insert the object at
@@ -301,13 +327,31 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
     }
 
     /**
+     * Register a pending JSONNumber under the receiver key.
+     *
+     * @param value the JSONNumber value to insert
+     * @return a [DataStream] which will commit the value when finalized
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
+    infix fun String.set(value: JSONNumber): DataStream<JSONNumber> = pendingData(value) { put(this, it) }
+
+    /**
+     * Register a pending JSONString under the receiver key.
+     *
+     * @param value the JSONString value to insert
+     * @return a [DataStream] which will commit the value when finalized
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
+    infix fun String.set(value: JSONString): DataStream<JSONString> = pendingData(value) { put(this, it) }
+    
+    /**
      * Register a pending JSONObject under the receiver key.
-     *
-     * These infix helpers make it convenient to write DSL-like assignments
-     * such as: "name" set "value" / "items" set array { ... }
-     *
-     * Each overload returns a [DataStream] that will call the provided finalizer
-     * when committed.
      *
      * @param value the JSONObject value to insert
      * @return a [DataStream] which will commit the value when finalized
@@ -569,7 +613,13 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
         return this
     }
 
-    /** Get an array value stored under [key], or null if absent or mismatched. */
+    /**
+     * Get an array value stored under [key], or null if absent or mismatched.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
     fun getArray(key: String): JSONArray? = getElement(key) as? JSONArray
 
     /** Get a JSON object stored under [key], or null if absent or mismatched. */

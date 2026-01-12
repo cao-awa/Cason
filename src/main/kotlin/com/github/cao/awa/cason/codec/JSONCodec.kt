@@ -4,6 +4,8 @@ import com.github.cao.awa.cason.array.JSONArray
 import com.github.cao.awa.cason.codec.decoder.JSONDecoder
 import com.github.cao.awa.cason.codec.encoder.JSONEncoder
 import com.github.cao.awa.cason.obj.JSONObject
+import com.github.cao.awa.cason.primary.JSONNumber
+import com.github.cao.awa.cason.primary.JSONString
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.jvmErasure
 
@@ -49,11 +51,17 @@ object JSONCodec {
                 is Byte -> name set data
                 is JSONObject -> name set data
                 is JSONArray -> name set data
-                else -> setAdapter(
-                    name,
-                    JSONEncoder.encode(data),
-                    json
-                )
+                is JSONNumber -> name set data
+                is JSONString -> name set data
+                else -> {
+                    if (data::class.isData) {
+                        setAdapter(
+                            name,
+                            JSONEncoder.encodeAny(data, data::class),
+                            json
+                        )
+                    }
+                }
             }
         }
     }

@@ -1,5 +1,5 @@
 package com.github.cao.awa.cason.annotation
 
-@Target(AnnotationTarget.FUNCTION)
+@Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class CallOnlyInternal
+annotation class Flattened
