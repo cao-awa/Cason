@@ -96,6 +96,7 @@ Cason provides an excellent balance of speed, features, and maintainability.
             Comment */
         },
     },
+    ...... // Repeat the data like that.
 ]
 ```
 
