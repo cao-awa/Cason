@@ -1,38 +1,32 @@
-import com.github.cao.awa.cason.codec.JSONCodec
+import com.alibaba.fastjson2.JSON
 import com.github.cao.awa.cason.annotation.Field
-import com.github.cao.awa.cason.annotation.Flattened
 import com.github.cao.awa.cason.annotation.Nested
-import com.github.cao.awa.cason.codec.encoder.JSONEncoder
+import com.github.cao.awa.cason.array.JSONArray
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
 import com.github.cao.awa.cason.serialize.parser.StrictJSONParser
 import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
+import java.io.File
 
 fun main() {
-    println(
-        JSONParser.parseArray(
-            """
-                [
-    {
-        "id": 0,
-        "name": "User_0", 
-        "bio": "This is a random bio with some // comments inside strings", 
-        // This is a line comment for item 0
-        "values": [
-            0.12843502127637108, 70, 0, /* Trailing comma test */
-        ],
-        "meta": {
-            "active": true,
-            "score": 11.066215791114075 /* Block 
-            Comment */
-        },
-    },
-    ]
-            """.trimIndent()
-        )
-    )
+    val file = File("test_huge_data.json5")
+
+    val data = CharArray(file.length().toInt())
+
+    file.bufferedReader(Charsets.UTF_8).read(data)
+
+    var start = System.currentTimeMillis()
+    println((JSONParser.parse(
+        data
+    ) as JSONArray).size())
+    println("Cason parsing done in ${System.currentTimeMillis() - start} ms")
+    start = System.currentTimeMillis()
+    println(JSON.parseArray(
+        data
+    ).size)
+    println("Fastjson2 parsing done in ${System.currentTimeMillis() - start} ms")
 }
 
 data class Empty(

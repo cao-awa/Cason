@@ -18,15 +18,11 @@ Cason parser based on implicit state machine, optimized for real-world usage sce
 - **vs org.json**: 2.5x-3x faster for standard JSON parsing
 - **vs fastjson2**: Slightly slower for pure throughput but more memory efficient
 - **JSON5**: Competitive parsing speed with excellent error recovery
-
-Benchmarks parsing a small elements object, repeat 10000 times to widen the performance gap. For most applications,
-Cason provides an excellent balance of speed, features, and maintainability.
-
 <details>
 
 <summary>Benchmark case</summary>
 
-### Test data
+### Test data (small)
 
 ```json
 {
@@ -73,12 +69,43 @@ Cason provides an excellent balance of speed, features, and maintainability.
 }
 ```
 
-### Test result (parsing speed)
+### Test result (small object parsing speed)
+Small object benchmarks parsing a small elements object, repeat 10000 times to widen the performance gap. For most applications,
+Cason provides an excellent balance of speed, features, and maintainability.
 
 * **Cason**: 229ms
 * **Cason (Strict mode)**: 173ms
 * **fastjson2**: 131ms
 * **org.json**: 741ms
+
+### Test data (big / JSON5)
+```json5
+[
+
+    {
+        "id": 0,
+        "name": "User_0", 
+        "bio": "This is a random bio with some // comments inside strings", 
+        // This is a line comment for item 0
+        "values": [
+            0.12843502127637108, 70, 0, /* Trailing comma test */
+        ],
+        "meta": {
+            "active": true,
+            "score": 11.066215791114075 /* Block 
+            Comment */
+        },
+    },
+]
+```
+
+### Test result (big object parsing speed)
+Big object benchmarks parsing a big elements array, repeat 248000 elements in array to widen the performance gap.
+
+* **Cason**: 334ms
+* **Cason (Strict mode)**: Not parsable
+* **fastjson2**: 391ms
+* **org.json**: Not parsable
 
 </details>
 

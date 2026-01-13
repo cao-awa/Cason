@@ -19,12 +19,13 @@ open class JSONParser {
         fun parseObject(input: String): JSONObject = parse(input) as JSONObject
         fun parseArray(input: String): JSONArray = parse(input) as JSONArray
 
-        fun parse(input: String): JSONElement {
-            val chars = input.toCharArray()
-            val parser = JSONParser(0, chars.size, true)
-            val element = parser.parseElement(chars)
-            if (parser.shouldSkipWs(chars)) {
-                parser.skipComments(chars)
+        fun parse(input: String): JSONElement = parse(input.toCharArray())
+
+        fun parse(input: CharArray): JSONElement {
+            val parser = JSONParser(0, input.size, true)
+            val element = parser.parseElement(input)
+            if (parser.shouldSkipWs(input)) {
+                parser.skipComments(input)
             }
             if (parser.eof()) {
                 return element

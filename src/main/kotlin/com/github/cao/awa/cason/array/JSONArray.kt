@@ -77,6 +77,8 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
 
     fun isEmpty(): Boolean = this.list.isEmpty()
 
+    fun size(): Int = this.list.size
+
     private fun setElement(index: Int, value: JSONElement): JSONArray {
         this.list[index] = value
         return this
