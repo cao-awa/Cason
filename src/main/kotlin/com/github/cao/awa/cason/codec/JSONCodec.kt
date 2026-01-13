@@ -9,7 +9,12 @@ import com.github.cao.awa.cason.primary.JSONString
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.jvmErasure
 
+@Suppress("unused")
 object JSONCodec {
+    inline fun <reified T> decode(data: String): T {
+        return JSONDecoder.decode(data)
+    }
+
     inline fun <reified T> decode(data: JSONObject): T {
         return JSONDecoder.decode(data)
     }

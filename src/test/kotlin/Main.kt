@@ -12,18 +12,26 @@ import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 fun main() {
     println(
-        JSONCodec.decode<Empty>(
-            JSONObject {
-                "value" set "awa"
-                "test_id" set 1234
-
-                json("inner_data") {
-                    "inner_string" set "inner-awa"
-                }
-            }
-        ).also {
-            println(JSONCodec.encodeAny(it))
-        }
+        JSONParser.parseArray(
+            """
+                [
+    {
+        "id": 0,
+        "name": "User_0", 
+        "bio": "This is a random bio with some // comments inside strings", 
+        // This is a line comment for item 0
+        "values": [
+            0.12843502127637108, 70, 0, /* Trailing comma test */
+        ],
+        "meta": {
+            "active": true,
+            "score": 11.066215791114075 /* Block 
+            Comment */
+        },
+    },
+    ]
+            """.trimIndent()
+        )
     )
 }
 

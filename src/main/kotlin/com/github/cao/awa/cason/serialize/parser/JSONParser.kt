@@ -49,7 +49,7 @@ open class JSONParser {
     fun eof(): Boolean = this.index >= this.end
 
     protected fun error(msg: String): Nothing {
-        throw JSONParseException("$msg at line $this.line, column $this.col")
+        throw JSONParseException("$msg at line ${this.line}, column ${this.col}")
     }
 
     protected fun ensureAvailable() {
@@ -122,6 +122,11 @@ open class JSONParser {
         }
 
         while (true) {
+            if (peekChar(chars) == '}') {
+                readCharNoLine(chars)
+                break
+            }
+
             val key = parseObjectKey(chars)
             if (shouldSkipWs(chars)) {
                 skipComments(chars)
@@ -183,7 +188,13 @@ open class JSONParser {
         }
 
         while (true) {
+            if (peekChar(chars) == ']') {
+                readCharNoLine(chars)
+                break
+            }
+
             list.add(parseElement(chars))
+
             if (shouldSkipWs(chars)) {
                 skipComments(chars)
             }
@@ -342,8 +353,7 @@ open class JSONParser {
 
     protected open fun parseString(chars: CharArray): String {
         ensureAvailable()
-        val quote = chars[this.index]
-        this.index++
+        val quote = chars[this.index++]
         this.col++
 
         val start = this.index
