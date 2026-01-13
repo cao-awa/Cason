@@ -18,6 +18,7 @@ Cason parser based on implicit state machine, optimized for real-world usage sce
 - **vs org.json**: 2.5x-3x faster for standard JSON parsing
 - **vs fastjson2**: Slightly slower for pure throughput but more memory efficient
 - **JSON5**: Competitive parsing speed with excellent error recovery
+
 <details>
 
 <summary>Benchmark case</summary>
@@ -70,7 +71,9 @@ Cason parser based on implicit state machine, optimized for real-world usage sce
 ```
 
 ### Test result (small object parsing speed)
-Small object benchmarks parsing a small elements object, repeat 10000 times to widen the performance gap. For most applications,
+
+Small object benchmarks parsing a small elements object, repeat 10000 times to widen the performance gap. For most
+applications,
 Cason provides an excellent balance of speed, features, and maintainability.
 
 * **Cason**: 229ms
@@ -79,28 +82,33 @@ Cason provides an excellent balance of speed, features, and maintainability.
 * **org.json**: 741ms
 
 ### Test data (big / JSON5)
+
 ```json5
 [
-
-    {
-        "id": 0,
-        "name": "User_0", 
-        "bio": "This is a random bio with some // comments inside strings", 
-        // This is a line comment for item 0
-        "values": [
-            0.12843502127637108, 70, 0, /* Trailing comma test */
-        ],
-        "meta": {
-            "active": true,
-            "score": 11.066215791114075 /* Block 
-            Comment */
-        },
+  {
+    "id": 0,
+    "name": "User_0",
+    "bio": "This is a random bio with some // comments inside strings",
+    // This is a line comment for item 0
+    "values": [
+      0.12843502127637108,
+      70,
+      0,
+      /* Trailing comma test */
+    ],
+    "meta": {
+      "active": true,
+      "score": 11.066215791114075
+      /* Block 
+                 Comment */
     },
-    ...... // Repeat the data like that.
+  },
+  // ...... Repeat the data like that.
 ]
 ```
 
 ### Test result (big object parsing speed)
+
 Big object benchmarks parsing a big elements array, repeat 248000 elements in array to widen the performance gap.
 
 * **Cason**: 334ms
@@ -228,7 +236,7 @@ fun main() {
             "inner_string" set "inner-awa"
         }
     }
-    
+
     println(
         JSONCodec.decode<Struct>(
             json
@@ -254,12 +262,19 @@ data class TestInnerData(
 ```
 
 The serialization test will get these output:
+
 ```json
-{"inner_data":{"inner_string":"inner-awa"},"test_id":1234,"value":"awa"}
+{
+  "inner_data": {
+    "inner_string": "inner-awa"
+  },
+  "test_id": 1234,
+  "value": "awa"
+}
 ```
 
 ```kotlin
-Empty(value=awa, testId=1234, innerData=TestInnerData(innerString=inner-awa))
+Empty(value = awa, testId = 1234, innerData = TestInnerData(innerString = inner - awa))
 ```
 
 ## Flatten
@@ -315,8 +330,9 @@ The flattened test will get these output:
   "value": "value-awa"
 }
 ```
+
 ```kotlin
-Struct(value=value-awa, testId=123, innerData=TestNested(innerString=value-qaq, innerInt=456))
+Struct(value = value - awa, testId = 123, innerData = TestNested(innerString = value - qaq, innerInt = 456))
 ```
 
 ## Notice
