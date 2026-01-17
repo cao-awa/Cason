@@ -76,10 +76,10 @@ Small object benchmarks parsing a small elements object, repeat 10000 times to w
 applications,
 Cason provides an excellent balance of speed, features, and maintainability.
 
-* **Cason**: 229ms
-* **Cason (Strict mode)**: 173ms
-* **fastjson2**: 131ms
-* **org.json**: 741ms
+* **Cason**: 43668 parses/s
+* **Cason (Strict mode)**: 57803 parses/s
+* **fastjson2**: 76336 parses/s
+* **org.json**: 13495 parses/s
 
 ### Test data (big / JSON5)
 
@@ -111,9 +111,9 @@ Cason provides an excellent balance of speed, features, and maintainability.
 
 Big object benchmarks parsing a big elements array, repeat 248000 elements in array to widen the performance gap.
 
-* **Cason**: 334ms
+* **Cason**: 3 parses/s
 * **Cason (Strict mode)**: Not parsable
-* **fastjson2**: 391ms
+* **fastjson2**: 2.56 parses/s
 * **org.json**: Not parsable
 
 </details>
