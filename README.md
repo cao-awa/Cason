@@ -23,7 +23,7 @@ Cason parser based on implicit state machine, optimized for real-world usage sce
 
 <summary>Benchmark case</summary>
 
-### Test data (small)
+### Test data (small strict JSON)
 
 ```json
 {
@@ -70,7 +70,7 @@ Cason parser based on implicit state machine, optimized for real-world usage sce
 }
 ```
 
-### Test result (small object parsing speed)
+### Test result (small strict JSON)
 
 Small object benchmarks parsing a small elements object, repeat 10000 times to widen the performance gap. For most
 applications,
@@ -81,7 +81,7 @@ Cason provides an excellent balance of speed, features, and maintainability.
 * **fastjson2**: 76336 parses/s
 * **org.json**: 13495 parses/s
 
-### Test data (big / JSON5)
+### Test data (big JSON5)
 
 ```json5
 [
@@ -107,7 +107,7 @@ Cason provides an excellent balance of speed, features, and maintainability.
 ]
 ```
 
-### Test result (big object parsing speed)
+### Test result (big JSON5)
 
 Big object benchmarks parsing a big elements array, repeat 248000 elements in array to widen the performance gap.
 
