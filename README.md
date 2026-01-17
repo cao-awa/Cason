@@ -2,7 +2,7 @@
 
 **Cason** is a lightweight, high-performance, type safe JSON/JSON5 parsing library for Kotlin with expressive DSL.
 
-![](https://count.getloli.com/@@cao-awa.conium?name=%40cao-awa.cason&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
+![](https://count.getloli.com/@@cao-awa.cason?name=%40cao-awa.cason&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
 
 ## Features
 
