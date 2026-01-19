@@ -1,12 +1,14 @@
 package com.github.cao.awa.cason.util
 
 object CasonUtil {
-    fun isWs(c: Char): Boolean =
-        c == ' ' || c == '\t' || c == '\u000B' || c == '\u000C' ||
-                c == '\u00A0' || c == '\uFEFF' || Character.isWhitespace(c)
+    fun isIdStart(c: Char): Boolean = when (c) {
+        '$', '_',
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+            -> true
 
-    fun isIdStart(c: Char): Boolean =
-        c == '$' || c == '_' || Character.isJavaIdentifierStart(c)
+        else -> false
+    }
 
     fun isIdPart(c: Char): Boolean =
         c == '$' || c == '_' || Character.isJavaIdentifierPart(c)

@@ -31,8 +31,17 @@ import kotlin.collections.component2
  *
  * @since 1.0.0
  */
-class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElement {
+class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     private val pendingData: MutableList<DataStream<*>> = ArrayList()
+
+    /**
+     * Construct an empty JSONObject
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
+    constructor() : this(HashMap<String, JSONElement>())
 
     /**
      * Construct an empty JSONObject and run [body] to populate it.
@@ -47,7 +56,7 @@ class JSONObject(private val map: LinkedHashMap<String, JSONElement>) : JSONElem
      *
      * @since 1.0.0
      */
-    constructor(body: JSONObject.() -> Unit) : this(LinkedHashMap<String, JSONElement>()) {
+    constructor(body: JSONObject.() -> Unit) : this(HashMap<String, JSONElement>()) {
         instruct(body)
     }
 

@@ -167,18 +167,20 @@ fun parsing() {
 }
     """
 
+    val charData = data.toCharArray()
+
     val testCount = 100000
 
     benchmark(testCount, "Cason") {
-        JSONParser.parse(data)
+        JSONParser.parse(charData)
     }
 
     benchmark(testCount, "Cason-strict") {
-        StrictJSONParser.parse(data)
+        StrictJSONParser.parse(charData)
     }
 
     benchmark(testCount, "fastjson") {
-        JSON.parseObject(data)
+        JSON.parseObject(charData)
     }
 
     benchmark(testCount, "org.json") {
