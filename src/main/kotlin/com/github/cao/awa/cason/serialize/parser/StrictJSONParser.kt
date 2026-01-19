@@ -42,13 +42,13 @@ class StrictJSONParser(
         skipWhitespaceIfAny(chars)
         ensureAvailable()
 
-        return when (val c = chars[this.index]) {
+        return when (val currentChar = chars[this.index]) {
             '"' -> JSONString(parseString(chars))
             '{' -> parseObject(chars)
             '[' -> parseArray(chars)
             '-', in '0'..'9' -> JSONNumber(parseNumber(chars))
             'n', 't', 'f' -> parseLiteral(chars)
-            else -> error("Unexpected character '$c'")
+            else -> error("Unexpected character '$currentChar'")
         }
     }
 
@@ -87,9 +87,9 @@ class StrictJSONParser(
         val end = this.end
         val map = HashMap<String, JSONElement>(24)
         while (true) {
-            // Object key (must be string)
+            // Object key (must be string).
             skipWhitespaceIfAny(chars)
-            if (index < end && chars[index] == '"') {
+            if (index < end) {
                 val key = parseString(chars)
 
                 skipWhitespaceIfAny(chars)

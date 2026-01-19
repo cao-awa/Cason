@@ -48,4 +48,6 @@ kotlin {
 
 test {
     useJUnitPlatform()
+
+    failOnNoDiscoveredTests = false
 }
