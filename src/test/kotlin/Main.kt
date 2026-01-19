@@ -11,22 +11,7 @@ import com.github.cao.awa.cason.serialize.writer.JSONWriter
 import java.io.File
 
 fun main() {
-    val file = File("test_huge_data.json5")
-
-    val data = CharArray(file.length().toInt())
-
-    file.bufferedReader(Charsets.UTF_8).read(data)
-
-    var start = System.currentTimeMillis()
-    println((JSONParser.parse(
-        data
-    ) as JSONArray).size())
-    println("Cason parsing done in ${System.currentTimeMillis() - start} ms")
-    start = System.currentTimeMillis()
-    println(JSON.parseArray(
-        data
-    ).size)
-    println("Fastjson2 parsing done in ${System.currentTimeMillis() - start} ms")
+    parsing()
 }
 
 data class Empty(
@@ -44,6 +29,25 @@ data class Empty(
 }
 
 data class TestInnerData(@Field("inner_string") val innerString: String)
+
+fun large() {
+    val file = File("test_huge_data.json5")
+
+    val data = CharArray(file.length().toInt())
+
+    file.bufferedReader(Charsets.UTF_8).read(data)
+
+    var start = System.currentTimeMillis()
+    println((JSONParser.parse(
+        data
+    ) as JSONArray).size())
+    println("Cason parsing done in ${System.currentTimeMillis() - start} ms")
+    start = System.currentTimeMillis()
+    println(JSON.parseArray(
+        data
+    ).size)
+    println("Fastjson2 parsing done in ${System.currentTimeMillis() - start} ms")
+}
 
 fun path() {
     val testId = 1
@@ -174,7 +178,7 @@ fun parsing() {
     }
 
     benchmark(testCount, "fastjson") {
-        com.alibaba.fastjson2.JSON.parseObject(data)
+        JSON.parseObject(data)
     }
 
     benchmark(testCount, "org.json") {
@@ -184,7 +188,7 @@ fun parsing() {
 
 fun benchmark(count: Int, sampleName: String, action: () -> Unit) {
     // Pre test.
-    for (i in 0 until 10000) {
+    for (i in 0 until 500000) {
         action()
     }
 

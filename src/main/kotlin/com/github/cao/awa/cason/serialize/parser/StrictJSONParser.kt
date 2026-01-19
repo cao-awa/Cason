@@ -1,4 +1,5 @@
 @file:Suppress("unused")
+
 package com.github.cao.awa.cason.serialize.parser
 
 import com.github.cao.awa.cason.JSONElement
@@ -10,63 +11,71 @@ import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 
-class StrictJSONParser: JSONParser {
+class StrictJSONParser(
+    start: Int,
+    end: Int,
+    isFinal: Boolean
+) : JSONParser(start, end, isFinal) {
     companion object {
-        fun parseObject(input: String): JSONObject = parse(input) as JSONObject
-        fun parseArray(input: String): JSONArray = parse(input) as JSONArray
+        fun parseObject(input: String): JSONObject =
+            parse(input) as JSONObject
+
+        fun parseArray(input: String): JSONArray =
+            parse(input) as JSONArray
 
         fun parse(input: String): JSONElement {
             val chars = input.toCharArray()
             val parser = StrictJSONParser(0, chars.size, true)
             val element = parser.parseElement(chars)
 
-            if (parser.shouldSkipWs(chars)) {
-                parser.skipWhitespace(chars)
-            }
+            parser.skipWhitespaceIfAny(chars)
 
             if (parser.eof()) {
                 return element
-            } else {
-                parser.error("Trailing characters after top-level value")
             }
+            parser.error("Trailing characters after top-level value")
         }
     }
-
-    constructor(start: Int, end: Int, isFinal: Boolean) : super(start, end, isFinal)
 
     override fun parseElement(chars: CharArray): JSONElement {
-        if (shouldSkipWs(chars)) {
-            skipWhitespace(chars)
-        }
+        skipWhitespaceIfAny(chars)
         ensureAvailable()
+
         return when (val c = chars[this.index]) {
+            '"' -> JSONString(parseString(chars))
             '{' -> parseObject(chars)
             '[' -> parseArray(chars)
-            '"' -> JSONString(parseString(chars))
             '-', in '0'..'9' -> JSONNumber(parseNumber(chars))
-            else -> parseLiteralOrError(chars, c)
+            'n', 't', 'f' -> parseLiteral(chars)
+            else -> error("Unexpected character '$c'")
         }
     }
 
-    private fun parseLiteralOrError(chars: CharArray, c: Char): JSONElement {
-        return when (c) {
-            'n', 't', 'f' -> {
-                when (val id = parseIdentifier(chars)) {
-                    "null" -> JSONNull
-                    "true" -> JSONBoolean(true)
-                    "false" -> JSONBoolean(false)
-                    else -> error("Unexpected identifier '$id'")
-                }
+    private fun parseLiteral(chars: CharArray): JSONElement {
+        val currentChar = peekChar(chars)
+        return when (currentChar) {
+            'n' -> {
+                this.col += 4
+                this.index += 4
+                JSONNull
             }
-            else -> error("Unexpected character '$c'")
+            't' -> {
+                this.col += 4
+                this.index += 4
+                JSONBoolean.TRUE
+            }
+            'f' -> {
+                this.col += 5
+                this.index += 5
+                JSONBoolean.FALSE
+            }
+            else -> error("Unexpected identifier '${parseIdentifier(chars)}'")
         }
     }
 
     override fun parseObject(chars: CharArray): JSONObject {
         expectChar(chars, '{')
-        if (shouldSkipWs(chars)) {
-            skipWhitespace(chars)
-        }
+        skipWhitespaceIfAny(chars)
 
         val map = LinkedHashMap<String, JSONElement>(24)
 
@@ -76,24 +85,23 @@ class StrictJSONParser: JSONParser {
         }
 
         while (true) {
-            val key = parseObjectKey(chars)
-            if (shouldSkipWs(chars)) {
-                skipWhitespace(chars)
+            // Object key (must be string)
+            skipWhitespaceIfAny(chars)
+            if (this.index >= this.end || chars[this.index] != '"') {
+                error("Invalid object key start '${peekChar(chars)}'")
             }
+            val key = parseString(chars)
 
+            skipWhitespaceIfAny(chars)
             expectChar(chars, ':')
-            map[key] = parseElement(chars)
 
-            if (shouldSkipWs(chars)) {
-                skipWhitespace(chars)
-            }
+            map[key] = parseElement(chars)
+            skipWhitespaceIfAny(chars)
 
             when (peekChar(chars)) {
                 ',' -> {
                     readCharNoLine(chars)
-                    if (shouldSkipWs(chars)) {
-                        skipWhitespace(chars)
-                    }
+                    skipWhitespaceIfAny(chars)
                 }
                 '}' -> {
                     readCharNoLine(chars)
@@ -106,59 +114,41 @@ class StrictJSONParser: JSONParser {
         return JSONObject(map)
     }
 
-    override fun parseObjectKey(chars: CharArray): String {
-        if (shouldSkipWs(chars)) {
+    private fun skipWhitespaceIfAny(chars: CharArray) {
+        val index = this.index
+        if (index < this.end && chars[index] <= ' ') {
             skipWhitespace(chars)
         }
-        val index = this.index
-        if (index >= this.end) {
-            error("Unexpected EOF in object key")
-        }
-        if (chars[index] == '"') {
-            return parseString(chars)
-        }
-        error("Invalid object key start '${chars[index]}' (expected '\"')")
     }
 
-    override fun shouldSkipWs(chars: CharArray): Boolean {
-        val index = this.index
-        return index < this.end && chars[index] <= ' '
-    }
-
-    fun skipWhitespace(chars: CharArray) {
+    private fun skipWhitespace(chars: CharArray) {
         var index = this.index
-        val end = this.end
         var line = this.line
         var col = this.col
+        val end = this.end
 
         while (index < end) {
-            val currentChar = chars[index]
-
-            if (currentChar == ' ' || currentChar == '\t') {
-                index++
-                col++
-                continue
-            }
-
-            if (currentChar == '\n') {
-                index++
-                line++
-                col = 1
-                continue
-            }
-
-            if (currentChar == '\r') {
-                if (index + 1 < end && chars[index + 1] == '\n') {
-                    index += 2
-                } else {
+            when (chars[index]) {
+                ' ', '\t' -> {
                     index++
+                    col++
                 }
-                line++
-                col = 1
-                continue
+                '\n' -> {
+                    index++
+                    line++
+                    col = 1
+                }
+                '\r' -> {
+                    if (index + 1 < end && chars[index + 1] == '\n') {
+                        index += 2
+                    } else {
+                        index++
+                    }
+                    line++
+                    col = 1
+                }
+                else -> break
             }
-
-            break
         }
 
         this.index = index
@@ -168,9 +158,10 @@ class StrictJSONParser: JSONParser {
 
     override fun parseString(chars: CharArray): String {
         ensureAvailable()
-        if (chars[this.index] != '"') {
+        if (chars[this@StrictJSONParser.index] != '"') {
             error("Expected '\"' to start string")
         }
+
         this.index++
         this.col++
 
@@ -178,86 +169,68 @@ class StrictJSONParser: JSONParser {
         var index = start
         val end = this.end
 
+        // F ast path: no escape.
+        while (index < end) {
+            val c = chars[index]
+            if (c == '"') {
+                this.index = index + 1
+                this.col += (index - start) + 1
+                return String(chars, start, index - start)
+            }
+            if (c == '\\') break
+            index++
+        }
+
+        if (index >= end) {
+            if (this.isFinal) {
+                error("Unterminated string")
+            }
+            throw NeedMoreInputException(this.index, this.line, this.col)
+        }
+
+        // Slow path: with escape.
+        val builder = StringBuilder(index - start)
+        builder.appendRange(chars, start, index)
+
+        this.index = index
+        this.col += index - start
+
         while (true) {
-            if (index < end) {
-                val currentChar = chars[index]
-                if (currentChar == '"') {
-                    this.index = index + 1
-                    this.col += (index - start) + 1
-                    return String(chars, start, index - start)
-                }
-                if (currentChar == '\\') {
-                    break
-                }
-                index++
-            } else {
+            if (this.index >= end) {
                 if (this.isFinal) {
                     error("Unterminated string")
                 }
                 throw NeedMoreInputException(this.index, this.line, this.col)
             }
-        }
 
-        val builder = StringBuilder((index - start) + 16)
-        builder.appendRange(chars, start, index)
+            val currentChar = chars[this.index++]
+            this.col++
 
-        this.col += index - start
-        this.index = index
-
-        var col = this.col
-
-        while (true) {
-            if (index < end) {
-                val currentChar = chars[index++]
-                col++
-
-                when (currentChar) {
-                    '"' -> {
-                        this.index = index
-                        this.col = col
-                        return builder.toString()
-                    }
-
-                    '\\' -> {
-                        if (index >= end) {
-                            if (this.isFinal) {
-                                error("Unterminated escape in string")
-                            }
-                            throw NeedMoreInputException(this.index, this.line, this.col)
+            when (currentChar) {
+                '"' -> return builder.toString()
+                '\\' -> {
+                    if (this.index >= end) {
+                        if (this.isFinal) {
+                            error("Unterminated escape in string")
                         }
-                        val esc = chars[index++]
-                        col++
-                        builder.append(
-                            when (esc) {
-                                'n' -> '\n'
-                                'r' -> '\r'
-                                't' -> '\t'
-                                'b' -> '\b'
-                                'f' -> '\u000C'
-                                '"' -> '"'
-                                '\\' -> '\\'
-                                else -> error("Unknown escape \\$esc")
-                            }
-                        )
+                        throw NeedMoreInputException(this@StrictJSONParser.index, line, col)
                     }
-
-                    '\n' ->
-                        error("Unescaped line terminator in string")
-
-                    '\r' -> {
-                        if (end <= index && !this.isFinal) {
-                            throw NeedMoreInputException(this.index, this.line, this.col)
+                    val esc = chars[this@StrictJSONParser.index++]
+                    this.col++
+                    builder.append(
+                        when (esc) {
+                            '"', '\\' -> esc
+                            'n' -> '\n'
+                            'r' -> '\r'
+                            't' -> '\t'
+                            'b' -> '\b'
+                            'f' -> '\u000C'
+                            else -> error("Unknown escape \\$esc")
                         }
-                        error("Unescaped line terminator in string")
-                    }
-
-                    else -> builder.append(currentChar)
+                    )
                 }
-            } else {
-                if (this.isFinal) {
-                    error("Unterminated string")
-                }
-                throw NeedMoreInputException(this.index, this.line, this.col)
+                '\n', '\r' -> error("Unescaped line terminator in string")
+                else -> builder.append(currentChar)
             }
         }
     }

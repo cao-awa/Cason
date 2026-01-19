@@ -6,6 +6,9 @@ import java.math.BigDecimal
 
 data class JSONNumber(val number: CasonNumber) : JSONElement {
     companion object {
+        val POSITIVE_INFINITY: JSONNumber = JSONNumber(CasonNumber.posInf())
+        val NAN: JSONNumber = JSONNumber(CasonNumber.nan())
+
         fun ofByte(value: Byte): JSONNumber = JSONNumber(CasonNumber.ofByte(value))
         fun ofShort(value: Short): JSONNumber = JSONNumber(CasonNumber.ofShort(value))
         fun ofInt(value: Int): JSONNumber = JSONNumber(CasonNumber.ofInt(value))
