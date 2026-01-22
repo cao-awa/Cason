@@ -11,7 +11,7 @@ import com.github.cao.awa.cason.serialize.writer.JSONWriter
 import java.io.File
 
 fun main() {
-    parsing()
+    large()
 }
 
 data class Empty(
@@ -31,21 +31,25 @@ data class Empty(
 data class TestInnerData(@Field("inner_string") val innerString: String)
 
 fun large() {
-    val file = File("test_huge_data.json5")
+    val file = File("test.json")
 
     val data = CharArray(file.length().toInt())
 
     file.bufferedReader(Charsets.UTF_8).read(data)
 
     var start = System.currentTimeMillis()
-    println((JSONParser.parse(
-        data
-    ) as JSONArray).size())
+    println(
+        (StrictJSONParser.parse(
+            data
+        ) as JSONObject).size()
+    )
     println("Cason parsing done in ${System.currentTimeMillis() - start} ms")
     start = System.currentTimeMillis()
-    println(JSON.parseArray(
-        data
-    ).size)
+    println(
+        JSON.parseObject(
+            data
+        ).size
+    )
     println("Fastjson2 parsing done in ${System.currentTimeMillis() - start} ms")
 }
 

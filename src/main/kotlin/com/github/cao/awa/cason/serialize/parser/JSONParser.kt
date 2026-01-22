@@ -186,12 +186,12 @@ open class JSONParser {
         expectChar(chars, '[')
         skipWsAndComments(chars)
 
-        val list = ArrayList<JSONElement>(24)
-
         if (peekChar(chars) == ']') {
             readCharNoLine(chars)
-            return JSONArray(list)
+            return JSONArray()
         }
+
+        val list = ArrayList<JSONElement>(24)
 
         while (true) {
             if (peekChar(chars) == ']') {

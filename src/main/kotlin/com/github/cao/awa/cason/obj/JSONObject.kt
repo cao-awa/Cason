@@ -236,7 +236,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.0
      */
-    fun put(key: String, value: Boolean): JSONObject = putElement(key, JSONBoolean(value))
+    fun put(key: String, value: Boolean): JSONObject = putElement(key, JSONBoolean.of(value))
 
     /**
      * Put a byte numeric value at [key].
@@ -1085,6 +1085,15 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
             action(entry)
         }
     }
+
+    /**
+     * Return size of this object.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.23
+     */
+    fun size(): Int = this.map.size
 
     /**
      * Internal helper which ensures pending data is completed before returning

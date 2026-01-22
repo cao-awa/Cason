@@ -6,6 +6,14 @@ data class JSONBoolean(val value: Boolean) : JSONElement {
     companion object {
         val TRUE = JSONBoolean(true)
         val FALSE = JSONBoolean(false)
+
+        fun of(bool: Boolean): JSONBoolean {
+            if (bool) {
+                return TRUE
+            } else {
+                return FALSE
+            }
+        }
     }
 
     override fun isNumber(): Boolean = false

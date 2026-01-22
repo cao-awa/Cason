@@ -12,6 +12,8 @@ import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
+    constructor(): this(ArrayList())
+
     constructor(body: JSONArray.() -> Unit) : this(ArrayList<JSONElement>()) {
         body(this)
     }
@@ -20,7 +22,7 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     fun add(value: JSONObject): JSONArray = add(value)
     fun add(value: JSONArray): JSONArray = add(value)
     fun add(value: String): JSONArray = add(JSONString(value))
-    fun add(value: Boolean): JSONArray = add(JSONBoolean(value))
+    fun add(value: Boolean): JSONArray = add(JSONBoolean.of(value))
     fun add(value: Byte): JSONArray = add(JSONNumber.ofByte(value))
     fun add(value: Short): JSONArray = add(JSONNumber.ofShort(value))
     fun add(value: Int): JSONArray = add(JSONNumber.ofInt(value))
@@ -67,7 +69,7 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     fun set(index: Int, value: JSONArray) = setElement(index, value)
     fun set(index: Int, value: JSONObject) = setElement(index, value)
     fun set(index: Int, value: String) = setElement(index, JSONString(value))
-    fun set(index: Int, value: Boolean) = setElement(index, JSONBoolean(value))
+    fun set(index: Int, value: Boolean) = setElement(index, JSONBoolean.of(value))
     fun set(index: Int, value: Byte) = setElement(index, JSONNumber.ofByte(value))
     fun set(index: Int, value: Short) = setElement(index, JSONNumber.ofShort(value))
     fun set(index: Int, value: Int) = setElement(index, JSONNumber.ofInt(value))

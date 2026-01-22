@@ -20,7 +20,13 @@ class StrictJSONParser(
         fun parseObject(input: String): JSONObject =
             parse(input) as JSONObject
 
+        fun parseObject(input: CharArray): JSONObject =
+            parse(input) as JSONObject
+
         fun parseArray(input: String): JSONArray =
+            parse(input) as JSONArray
+
+        fun parseArray(input: CharArray): JSONArray =
             parse(input) as JSONArray
 
         fun parse(input: String): JSONElement = parse(input.toCharArray())
