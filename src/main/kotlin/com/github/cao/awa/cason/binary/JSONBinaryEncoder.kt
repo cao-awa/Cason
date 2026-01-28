@@ -24,34 +24,6 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.reflect.KClass
 
-fun main() {
-    val json = JSONObject {
-        "awa" set 1234
-        "nes" nested Test("qaq")
-        array("test") {
-            +"awa"
-            add(JSONObject {
-                "awa" set 9876543210
-                "1" set true
-                "2" set true
-                "3" set false
-                "4" set false
-            })
-        }
-    }
-
-    val encoded = JSONBinaryEncoder.encodeObject(json)
-    println(String(encoded))
-    println(encoded.size)
-    val decoded = JSONBinaryDecoder.decodeObject(encoded)
-    println(decoded.toString(false, ""))
-    println(decoded.toString(false, "").length)
-}
-
-data class Test(val awa: String) {
-
-}
-
 class JSONBinaryEncoder {
     companion object {
         private val elementId: MutableMap<KClass<*>, Int> = mutableMapOf<KClass<*>, Int>().also {

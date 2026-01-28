@@ -1,7 +1,9 @@
 import com.alibaba.fastjson2.JSON
 import com.github.cao.awa.cason.annotation.Field
+import com.github.cao.awa.cason.annotation.Flattened
 import com.github.cao.awa.cason.annotation.Nested
-import com.github.cao.awa.cason.array.JSONArray
+import com.github.cao.awa.cason.binary.JSONBinaryDecoder
+import com.github.cao.awa.cason.binary.JSONBinaryEncoder
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
@@ -11,22 +13,41 @@ import com.github.cao.awa.cason.serialize.writer.JSONWriter
 import java.io.File
 
 fun main() {
-    parsing()
+    binary()
 }
 
-data class Empty(
+fun binary() {
+    val json = JSONObject {
+        "awa" set 1234
+        "nes" nested Nested("qaq", 123456789, TestInnerData("inner string"))
+        array("test") {
+            +"awa"
+            add(JSONObject {
+                "awa" set 9876543210
+                "1" set true
+                "2" set true
+                "3" set false
+                "4" set false
+            })
+        }
+    }
+
+    val encoded = JSONBinaryEncoder.encodeObject(json)
+    println(String(encoded))
+    println(encoded.size)
+    val decoded = JSONBinaryDecoder.decodeObject(encoded)
+    println(decoded.toString(false, ""))
+    println(decoded.toString(false, "").length)
+}
+
+data class Nested(
     val value: String,
     @Field("test_id")
     val testId: Int,
     @Nested
     @Field("inner_data")
     val innerData: TestInnerData
-) {
-    init {
-        require(this.value.isNotEmpty())
-        require(this.testId == 1234)
-    }
-}
+)
 
 data class TestInnerData(@Field("inner_string") val innerString: String)
 

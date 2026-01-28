@@ -416,12 +416,19 @@ fun test() {
 data class TestNested(val name: String)
 ```
 
-好，这里我给你一段**可以直接放进 README 的「Why Cason?」**，语气偏工程理性、不是营销吹捧，也和你现在整篇文档风格是统一的。
-（如果你想更偏宣传 / 更偏技术白皮书 / 更偏 Kotlin 社区口吻，我也可以再拆版本。）
+## Binary serialize
 
----
+```kotlin
+fun main() {
+    JSONObject {
+        "awa" set 123456789
+    }
+    val encoded: ByteArray = JSONBinaryEncoder.encodeObject(json)
+    val decoded: JSONObject = JSONBinaryDecoder.decodeObject(encoded)
+}
+```
 
-## Why Cason?
+# Why Cason?
 
 Most JSON libraries focus on **parsing correctness** or **raw throughput**.
 Cason focuses on **real-world usability**.
