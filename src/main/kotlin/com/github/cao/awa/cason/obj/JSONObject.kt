@@ -161,7 +161,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     fun putNull(key: String) = putElement(key, JSONNull)
 
     /**
-     * Put a nested [JSONNumber] value at [key].
+     * Put a [JSONNumber] value at [key].
      *
      * @param key the key to insert the number at
      * @param value the [JSONNumber] value to insert
@@ -617,7 +617,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      * @param value the JSONElement to insert
      * @return this JSONObject
      */
-    private fun putElement(key: String, value: JSONElement): JSONObject {
+    fun putElement(key: String, value: JSONElement): JSONObject {
         this.map[key] = value
         return this
     }
@@ -1124,7 +1124,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.0
      */
-    fun toString(pretty: Boolean, indent: String, depth: Int): String {
+    fun toString(pretty: Boolean, indent: String, depth: Int = 0): String {
         val builder = StringBuilder()
         builder.append('{')
         if (this.map.isEmpty()) {

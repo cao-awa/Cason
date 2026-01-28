@@ -12,23 +12,62 @@ import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
 
 data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
-    constructor(): this(ArrayList())
+    constructor() : this(ArrayList())
 
     constructor(body: JSONArray.() -> Unit) : this(ArrayList<JSONElement>()) {
         body(this)
     }
 
     fun add(): JSONArray = add(JSONNull)
-    fun add(value: JSONObject): JSONArray = add(value)
-    fun add(value: JSONArray): JSONArray = add(value)
-    fun add(value: String): JSONArray = add(JSONString(value))
-    fun add(value: Boolean): JSONArray = add(JSONBoolean.of(value))
-    fun add(value: Byte): JSONArray = add(JSONNumber.ofByte(value))
-    fun add(value: Short): JSONArray = add(JSONNumber.ofShort(value))
-    fun add(value: Int): JSONArray = add(JSONNumber.ofInt(value))
-    fun add(value: Long): JSONArray = add(JSONNumber.ofLong(value))
-    fun add(value: Float): JSONArray = add(JSONNumber.ofFloat(value))
-    fun add(value: Double): JSONArray = add(JSONNumber.ofDouble(value))
+    fun add(value: JSONObject): JSONArray {
+        this.list.add(value)
+        return this
+    }
+
+    fun add(value: JSONArray): JSONArray {
+        this.list.add(value)
+        return this
+    }
+
+    fun add(value: String): JSONArray {
+        this.list.add(JSONString(value))
+        return this
+    }
+
+    fun add(value: Boolean): JSONArray {
+        this.list.add(JSONBoolean.of(value))
+        return this
+    }
+
+    fun add(value: Byte): JSONArray {
+        this.list.add(JSONNumber.ofByte(value))
+        return this
+    }
+
+    fun add(value: Short): JSONArray {
+        this.list.add(JSONNumber.ofShort(value))
+        return this
+    }
+
+    fun add(value: Int): JSONArray {
+        this.list.add(JSONNumber.ofInt(value))
+        return this
+    }
+
+    fun add(value: Long): JSONArray {
+        this.list.add(JSONNumber.ofLong(value))
+        return this
+    }
+
+    fun add(value: Float): JSONArray {
+        this.list.add(JSONNumber.ofFloat(value))
+        return this
+    }
+
+    fun add(value: Double): JSONArray {
+        this.list.add(JSONNumber.ofDouble(value))
+        return this
+    }
 
     operator fun String.unaryPlus(): JSONArray = add(this)
     operator fun Boolean.unaryPlus(): JSONArray = add(this)
@@ -99,6 +138,12 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     fun add(element: JSONElement): JSONArray {
         this.list.add(element)
         return this
+    }
+
+    fun forEach(consumer: (JSONElement) -> Unit) {
+        for (element in this.list) {
+            consumer(element)
+        }
     }
 
     fun toString(pretty: Boolean, indent: String, depth: Int): String {

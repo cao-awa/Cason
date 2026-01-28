@@ -15,17 +15,17 @@ import java.math.BigDecimal
 
 abstract class JSONNumber : JSONElement {
     companion object {
-        val POSITIVE_INFINITY: JSONNumber = JSONPositiveInfinity
-        val NEGATIVE_INFINITY: JSONNumber = JSONNegativeInfinity
-        val NAN: JSONNumber = JSONNaN
+        val POSITIVE_INFINITY: JSONPositiveInfinity = JSONPositiveInfinity
+        val NEGATIVE_INFINITY: JSONNegativeInfinity = JSONNegativeInfinity
+        val NAN: JSONNaN = JSONNaN
 
-        fun ofByte(value: Byte): JSONNumber = JSONByte(value)
-        fun ofShort(value: Short): JSONNumber = JSONShort(value)
-        fun ofInt(value: Int): JSONNumber = JSONInt(value)
-        fun ofLong(value: Long): JSONNumber = JSONLong(value)
-        fun ofFloat(value: Float): JSONNumber = JSONFloat(value)
-        fun ofDouble(value: Double): JSONNumber = JSONDouble(value)
-        fun ofBig(value: BigDecimal): JSONNumber = JSONBigDecimal(value)
+        fun ofByte(value: Byte): JSONByte = JSONByte(value)
+        fun ofShort(value: Short): JSONShort = JSONShort(value)
+        fun ofInt(value: Int): JSONInt = JSONInt(value)
+        fun ofLong(value: Long): JSONLong = JSONLong(value)
+        fun ofFloat(value: Float): JSONFloat = JSONFloat(value)
+        fun ofDouble(value: Double): JSONDouble = JSONDouble(value)
+        fun ofBig(value: BigDecimal): JSONBigDecimal = JSONBigDecimal(value)
 
         fun adapter(bigDecimal: BigDecimal): JSONNumber {
             val precision = bigDecimal.precision()
