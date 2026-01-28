@@ -2,6 +2,7 @@ package com.github.cao.awa.cason.binary
 
 import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
+import com.github.cao.awa.cason.binary.compress.BinaryCompress
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONNumber
@@ -28,7 +29,27 @@ import kotlin.reflect.KClass
 
 class JSONBinaryDecoder {
     companion object {
-        fun decodeElement(tag: Int, input: InputStream): JSONElement {
+        fun decode(data: ByteArray): JSONElement {
+            val input = ByteArrayInputStream(BinaryCompress.decompress(data))
+            val mark = input.read()
+            if (mark == 0) {
+                return decodeObject(input)
+            } else if (mark == 1) {
+                return decodeArray(input)
+            }
+            return decodeElement(mark, input)
+        }
+
+        fun decodeObject(data: ByteArray): JSONObject {
+            return decode(data) as JSONObject
+        }
+
+
+        fun decodeArray(data: ByteArray): JSONArray {
+            return decode(data) as JSONArray
+        }
+
+        private fun decodeElement(tag: Int, input: InputStream): JSONElement {
             return when (tag) {
                 0 -> decodeObject(input)
                 1 -> decodeArray(input)
@@ -48,29 +69,29 @@ class JSONBinaryDecoder {
             }
         }
 
-        fun decodeByte(input: InputStream): JSONByte {
+        private fun decodeByte(input: InputStream): JSONByte {
             return JSONNumber.ofByte(input.read().toByte())
         }
 
-        fun decodeShort(input: InputStream): JSONShort {
+        private fun decodeShort(input: InputStream): JSONShort {
             val short = ByteArray(2)
             input.read(short)
             return JSONNumber.ofShort(Base256.tagFromBuf(short).toShort())
         }
 
-        fun decodeInt(input: InputStream): JSONInt {
+        private fun decodeInt(input: InputStream): JSONInt {
             val integer = ByteArray(4)
             input.read(integer)
             return JSONNumber.ofInt(Base256.intFromBuf(integer))
         }
 
-        fun decodeLong(input: InputStream): JSONLong {
+        private fun decodeLong(input: InputStream): JSONLong {
             val integer = ByteArray(8)
             input.read(integer)
             return JSONNumber.ofLong(Base256.longFromBuf(integer))
         }
 
-        fun decodeFloat(input: InputStream): JSONFloat {
+        private fun decodeFloat(input: InputStream): JSONFloat {
             val float = ByteArray(4)
             input.read(float)
             return JSONNumber.ofFloat(
@@ -81,7 +102,7 @@ class JSONBinaryDecoder {
             )
         }
 
-        fun decodeDouble(input: InputStream): JSONDouble {
+        private fun decodeDouble(input: InputStream): JSONDouble {
             val double = ByteArray(8)
             input.read(double)
             return JSONNumber.ofDouble(
@@ -92,7 +113,7 @@ class JSONBinaryDecoder {
             )
         }
 
-        fun decodeBigDecimal(input: InputStream): JSONBigDecimal {
+        private fun decodeBigDecimal(input: InputStream): JSONBigDecimal {
             val dataSize = input.read()
             val bytes = ByteArray(dataSize)
             input.read(bytes)
@@ -109,18 +130,14 @@ class JSONBinaryDecoder {
             return JSONNumber.ofBig(BigDecimal(unscaled, scale))
         }
 
-        fun decodeString(input: InputStream): JSONString {
+        private fun decodeString(input: InputStream): JSONString {
             val length = input.read()
             val data = ByteArray(length)
             input.read(data)
             return JSONString(String(data))
         }
 
-        fun decodeObject(input: ByteArray): JSONObject {
-            return decodeObject(ByteArrayInputStream(input))
-        }
-
-        fun decodeObject(input: InputStream): JSONObject {
+        private fun decodeObject(input: InputStream): JSONObject {
             val size = Base256.tagFromBuf(
                 ByteArray(2).also {
                     input.read(it)
@@ -138,7 +155,7 @@ class JSONBinaryDecoder {
             return obj
         }
 
-        fun decodeArray(input: InputStream): JSONArray {
+        private fun decodeArray(input: InputStream): JSONArray {
             val size = Base256.tagFromBuf(ByteArray(2).also {
                 input.read(it)
             })
@@ -151,7 +168,7 @@ class JSONBinaryDecoder {
             return array
         }
 
-        fun decodeBoolean(input: InputStream): JSONBoolean {
+        private fun decodeBoolean(input: InputStream): JSONBoolean {
             if (input.read() == 0) {
                 return JSONBoolean.FALSE
             } else {

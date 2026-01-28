@@ -1,6 +1,8 @@
 package com.github.cao.awa.cason.binary
 
+import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
+import com.github.cao.awa.cason.binary.compress.BinaryCompress
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONString
@@ -43,7 +45,21 @@ class JSONBinaryEncoder {
             it[JSONNegativeInfinity::class] = 13
         }
 
-        fun encodeElement(value: Any, output: OutputStream) {
+        fun encode(value: JSONObject): ByteArray {
+            val outputStream = ByteArrayOutputStream()
+            outputStream.write(0)
+            encodeObject(value, outputStream)
+            return BinaryCompress.compress(outputStream.toByteArray())
+        }
+
+        fun encode(value: JSONArray): ByteArray {
+            val outputStream = ByteArrayOutputStream()
+            outputStream.write(1)
+            encodeArray(value, outputStream)
+            return BinaryCompress.compress(outputStream.toByteArray())
+        }
+
+        private fun encodeElement(value: JSONElement, output: OutputStream) {
             when (value) {
                 is JSONObject -> encodeObject(value, output)
                 is JSONArray -> encodeArray(value, output)
@@ -59,23 +75,23 @@ class JSONBinaryEncoder {
             }
         }
 
-        fun encodeByte(jsonByte: JSONByte, output: OutputStream) {
+        private fun encodeByte(jsonByte: JSONByte, output: OutputStream) {
             output.write(jsonByte.value.toInt())
         }
 
-        fun encodeShort(jsonShort: JSONShort, output: OutputStream) {
+        private fun encodeShort(jsonShort: JSONShort, output: OutputStream) {
             output.write(Base256.tagToBuf(jsonShort.value.toInt()))
         }
 
-        fun encodeInt(jsonInt: JSONInt, output: OutputStream) {
+        private fun encodeInt(jsonInt: JSONInt, output: OutputStream) {
             output.write(Base256.intToBuf(jsonInt.value))
         }
 
-        fun encodeLong(jsonLong: JSONLong, output: OutputStream) {
+        private fun encodeLong(jsonLong: JSONLong, output: OutputStream) {
             output.write(Base256.longToBuf(jsonLong.value))
         }
 
-        fun encodeFloat(value: JSONFloat, output: OutputStream) {
+        private fun encodeFloat(value: JSONFloat, output: OutputStream) {
             output.write(
                 ByteBuffer
                     .allocate(4)
@@ -85,7 +101,7 @@ class JSONBinaryEncoder {
             )
         }
 
-        fun encodeDouble(value: JSONDouble, output: OutputStream) {
+        private fun encodeDouble(value: JSONDouble, output: OutputStream) {
             output.write(
                 ByteBuffer
                     .allocate(8)
@@ -95,7 +111,7 @@ class JSONBinaryEncoder {
             )
         }
 
-        fun encodeBigDecimal(decimal: JSONBigDecimal, output: OutputStream) {
+        private fun encodeBigDecimal(decimal: JSONBigDecimal, output: OutputStream) {
             val bigDecimal = decimal.value
             val unscaled: BigInteger = bigDecimal.unscaledValue()
             val scale: Int = bigDecimal.scale()
@@ -115,19 +131,19 @@ class JSONBinaryEncoder {
             output.write(byteArray)
         }
 
-        fun encodeString(jsonString: JSONString, output: OutputStream) {
+        private fun encodeString(jsonString: JSONString, output: OutputStream) {
             val string = jsonString.asString()
             output.write(string.length)
             output.write(string.toByteArray())
         }
 
-        fun encodeObject(json: JSONObject): ByteArray {
+        private fun encodeObject(json: JSONObject): ByteArray {
             val output = ByteArrayOutputStream()
             encodeObject(json, output)
             return output.toByteArray()
         }
 
-        fun encodeObject(json: JSONObject, output: OutputStream) {
+        private fun encodeObject(json: JSONObject, output: OutputStream) {
             output.write(Base256.tagToBuf(json.size()))
             json.forEach { (key, value) ->
                 output.write(this.elementId[value::class]!!)
@@ -137,7 +153,7 @@ class JSONBinaryEncoder {
             }
         }
 
-        fun encodeArray(array: JSONArray, output: OutputStream) {
+        private fun encodeArray(array: JSONArray, output: OutputStream) {
             output.write(Base256.tagToBuf(array.size()))
 
             array.forEach { element ->
@@ -146,7 +162,7 @@ class JSONBinaryEncoder {
             }
         }
 
-        fun encodeBoolean(bool: JSONBoolean, output: OutputStream) {
+        private fun encodeBoolean(bool: JSONBoolean, output: OutputStream) {
             if (bool.value) {
                 output.write(1)
             } else {

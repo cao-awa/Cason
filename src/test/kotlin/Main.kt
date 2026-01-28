@@ -32,7 +32,7 @@ fun binary() {
         }
     }
 
-    val encoded = JSONBinaryEncoder.encodeObject(json)
+    val encoded = JSONBinaryEncoder.encode(json)
     println(String(encoded))
     println(encoded.size)
     val decoded = JSONBinaryDecoder.decodeObject(encoded)
