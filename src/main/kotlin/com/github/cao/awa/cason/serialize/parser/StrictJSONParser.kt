@@ -52,7 +52,7 @@ class StrictJSONParser(
             '"' -> JSONString(parseString(chars))
             '{' -> parseObject(chars)
             '[' -> parseArray(chars)
-            '-', in '0'..'9' -> JSONNumber(parseNumber(chars))
+            '-', in '0'..'9' -> parseNumber(chars)
             'n', 't', 'f' -> parseLiteral(chars)
             else -> error("Unexpected character '$currentChar'")
         }

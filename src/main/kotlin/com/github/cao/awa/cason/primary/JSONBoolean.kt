@@ -2,19 +2,24 @@ package com.github.cao.awa.cason.primary
 
 import com.github.cao.awa.cason.JSONElement
 
-data class JSONBoolean(val value: Boolean) : JSONElement {
+class JSONBoolean : JSONElement {
     companion object {
-        val TRUE = JSONBoolean(true)
-        val FALSE = JSONBoolean(false)
+        val TRUE = JSONBoolean()
+        val FALSE = JSONBoolean()
 
         fun of(bool: Boolean): JSONBoolean {
-            if (bool) {
-                return TRUE
+            return if (bool) {
+                TRUE
             } else {
-                return FALSE
+                FALSE
             }
         }
     }
+
+    val value: Boolean
+        get() {
+            return this == TRUE
+        }
 
     override fun isNumber(): Boolean = false
     override fun isObject(): Boolean = false
@@ -23,5 +28,10 @@ data class JSONBoolean(val value: Boolean) : JSONElement {
     override fun isNull(): Boolean = false
     override fun isBoolean(): Boolean = true
 
-    override fun toString(): String = this.value.toString()
+    override fun toString(): String {
+        if (this == TRUE) {
+            return "true"
+        }
+        return "false"
+    }
 }

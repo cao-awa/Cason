@@ -11,7 +11,7 @@ import com.github.cao.awa.cason.serialize.writer.JSONWriter
 import java.io.File
 
 fun main() {
-    large()
+    parsing()
 }
 
 data class Empty(
@@ -187,9 +187,9 @@ fun parsing() {
         JSON.parseObject(charData)
     }
 
-    benchmark(testCount, "org.json") {
-        org.json.JSONObject(data)
-    }
+//    benchmark(testCount, "org.json") {
+//        org.json.JSONObject(data)
+//    }
 }
 
 fun benchmark(count: Int, sampleName: String, action: () -> Unit) {
@@ -202,5 +202,5 @@ fun benchmark(count: Int, sampleName: String, action: () -> Unit) {
     for (i in 0 until count) {
         action()
     }
-    println("Sample $sampleName done $count times test in ${System.currentTimeMillis() - start} ms")
+    println("Sample $sampleName done $count times test in ${(System.currentTimeMillis() - start) / 1000F} s")
 }
