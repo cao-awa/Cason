@@ -32,7 +32,7 @@ fun binary() {
         }
     }
 
-    val encoded = JSONBinaryEncoder.encode(json)
+    val encoded: ByteArray = JSONBinaryEncoder.encode(json)
     println(String(encoded))
     println(encoded.size)
     val decoded = JSONBinaryDecoder.decodeObject(encoded)
@@ -204,13 +204,13 @@ fun parsing() {
         StrictJSONParser.parse(charData)
     }
 
-    benchmark(testCount, "fastjson") {
+    benchmark(testCount, "fastjson2") {
         JSON.parseObject(charData)
     }
 
-//    benchmark(testCount, "org.json") {
-//        org.json.JSONObject(data)
-//    }
+    benchmark(testCount, "org.json") {
+        org.json.JSONObject(data)
+    }
 }
 
 fun benchmark(count: Int, sampleName: String, action: () -> Unit) {

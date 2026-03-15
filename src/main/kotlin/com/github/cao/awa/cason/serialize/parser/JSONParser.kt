@@ -95,14 +95,17 @@ open class JSONParser {
         return when (peekChar(chars)) {
             'n' -> {
                 this.index += 4
+                this.col += 4
                 JSONNull
             }
             't' -> {
                 this.index += 4
+                this.col += 4
                 JSONBoolean.TRUE
             }
             'f' -> {
                 this.index += 5
+                this.col += 5
                 JSONBoolean.FALSE
             }
             'I' -> {
@@ -111,6 +114,7 @@ open class JSONParser {
             }
             'N' -> {
                 this.index += 3
+                this.col += 3
                 JSONNumber.NAN
             }
             else -> error("Unexpected identifier '${parseIdentifier(chars)}'")
@@ -139,8 +143,11 @@ open class JSONParser {
             val key = parseObjectKey(chars)
             skipWsAndComments(chars)
 
+            this.col += key.length
+
             // ':' is structural, no line break expected.
             expectChar(chars, ':')
+            this.col++
             val value = parseElement(chars)
             map[key] = value
             skipWsAndComments(chars)
@@ -171,12 +178,14 @@ open class JSONParser {
         val index = this.index
         if (index < this.end) {
             val keyChar = chars[index]
-            return when {
+            val result = when {
                 keyChar == '"' || keyChar == '\'' -> parseString(chars)
                 keyChar == '+' || keyChar == '-' || keyChar == '.' || keyChar.isDigit() -> parseNumber(chars).toString()
                 CasonUtil.isIdStart(keyChar) -> parseIdentifier(chars)
                 else -> error("Invalid object key start '$keyChar'")
             }
+            this.col += result.length
+            return result
         } else {
             error("Unexpected EOF in object key")
         }
@@ -339,7 +348,7 @@ open class JSONParser {
                             index++
                         }
                         line++
-                        col = 1
+                        col = 0
                         continue
                     }
 
@@ -367,7 +376,6 @@ open class JSONParser {
 
         val quote = chars[index++]
         this.col++
-
 
         // Fast path: only look for quote or backslash.
         while (true) {
