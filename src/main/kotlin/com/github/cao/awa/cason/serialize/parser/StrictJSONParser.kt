@@ -8,7 +8,6 @@ import com.github.cao.awa.cason.exception.NeedMoreInputException
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONNull
-import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 
 class StrictJSONParser(
@@ -178,7 +177,7 @@ class StrictJSONParser(
             index++
             col++
 
-            // F ast path: no escape.
+            // Fast path: no escape.
             while (index < end) {
                 val c = chars[index]
                 if (c == '"') {

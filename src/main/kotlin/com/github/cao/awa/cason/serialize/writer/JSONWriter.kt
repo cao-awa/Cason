@@ -107,7 +107,10 @@ object JSONWriter {
                 '\u2029' -> builder.append("\\u2029")
                 else -> {
                     if (ch.code < 0x20) {
-                        builder.append("\\u").append(ch.code.toString(16).padStart(4, '0'))
+                        builder.append("\\u").append(
+                            ch.code.toString(16)
+                                .padStart(4, '0')
+                        )
                     } else {
                         builder.append(ch)
                     }

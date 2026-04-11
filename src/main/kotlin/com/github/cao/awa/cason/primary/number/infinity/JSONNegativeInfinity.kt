@@ -1,8 +1,13 @@
 package com.github.cao.awa.cason.primary.number.infinity
 
 import com.github.cao.awa.cason.primary.JSONNumber
+import java.math.BigDecimal
 
 object JSONNegativeInfinity: JSONNumber() {
+    override fun asBigDecimal(): BigDecimal {
+        error("Infinity cannot be a real number")
+    }
+
     override fun asByte(): Byte {
         error("Infinity cannot be a real number")
     }

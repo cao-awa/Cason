@@ -1,8 +1,13 @@
 package com.github.cao.awa.cason.primary.number.nan
 
 import com.github.cao.awa.cason.primary.JSONNumber
+import java.math.BigDecimal
 
 object JSONNaN: JSONNumber() {
+    override fun asBigDecimal(): BigDecimal {
+        error("NaN cannot be a real number")
+    }
+
     override fun asByte(): Byte {
         error("NaN cannot be a real number")
     }

@@ -34,7 +34,7 @@ abstract class JSONNumber : JSONElement {
                 return ofDouble(bigDecimal.toDouble())
             }
             // Integer.
-            if (precision < 19) {
+            if (precision < 20) {
                 if (precision < 10) {
                     return ofInt(bigDecimal.toInt())
                 }
@@ -44,6 +44,7 @@ abstract class JSONNumber : JSONElement {
         }
     }
 
+    abstract fun asBigDecimal(): BigDecimal
     abstract fun asByte(): Byte
     abstract fun asShort(): Short
     abstract fun asInt(): Int

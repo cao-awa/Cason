@@ -14,6 +14,7 @@ import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
 import com.github.cao.awa.cason.stream.DataStream
+import java.math.BigDecimal
 import kotlin.collections.component1
 import kotlin.collections.component2
 
@@ -650,6 +651,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.0
      */
+    fun getNumber(key: String): BigDecimal = (getElement(key) as JSONNumber).asBigDecimal()
     fun getByte(key: String): Byte? = (getElement(key) as? JSONNumber)?.asByte()
     fun getShort(key: String): Short? = (getElement(key) as? JSONNumber)?.asShort()
     fun getInt(key: String): Int? = (getElement(key) as? JSONNumber)?.asInt()

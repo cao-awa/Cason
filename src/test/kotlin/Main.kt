@@ -13,7 +13,7 @@ import com.github.cao.awa.cason.serialize.writer.JSONWriter
 import java.io.File
 
 fun main() {
-    binary()
+    parsing()
 }
 
 fun binary() {
@@ -154,10 +154,10 @@ fun parsing() {
   "templates": {
     "armor": {
       "slot": "helmet",
-      "defense": 2,
-      "toughness": 2,
-      "knockback_resistance": 2,
-      "enchantable": 2
+      "defense": 2.124,
+      "toughness": 123456,
+      "knockback_resistance": 2.256,
+      "enchantable": 2.567
     },
     "netherite_axe": {},
     "can_destroy_in_creative": true,
@@ -188,7 +188,8 @@ fun parsing() {
     "spawn_egg": "minecraft:creeper",
     "max_count": 64,
     "use_action": "eat"
-  }
+  },
+  "test": 111111111111111111111111111111
 }
     """
 
@@ -196,21 +197,23 @@ fun parsing() {
 
     val testCount = 100000
 
-    benchmark(testCount, "Cason") {
-        JSONParser.parse(charData)
-    }
+    (JSONParser.parse(charData) as JSONObject).getNumber("test")
 
-    benchmark(testCount, "Cason-strict") {
-        StrictJSONParser.parse(charData)
-    }
-
-    benchmark(testCount, "fastjson2") {
-        JSON.parseObject(charData)
-    }
-
-    benchmark(testCount, "org.json") {
-        org.json.JSONObject(data)
-    }
+//    benchmark(testCount, "Cason") {
+//        JSONParser.parse(charData)
+//    }
+//
+//    benchmark(testCount, "Cason-strict") {
+//        StrictJSONParser.parse(charData)
+//    }
+//
+//    benchmark(testCount, "fastjson2") {
+//        JSON.parseObject(charData)
+//    }
+//
+//    benchmark(testCount, "org.json") {
+//        org.json.JSONObject(data)
+//    }
 }
 
 fun benchmark(count: Int, sampleName: String, action: () -> Unit) {

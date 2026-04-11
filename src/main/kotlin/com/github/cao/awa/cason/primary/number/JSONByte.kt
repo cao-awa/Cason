@@ -1,8 +1,11 @@
 package com.github.cao.awa.cason.primary.number
 
 import com.github.cao.awa.cason.primary.JSONNumber
+import java.math.BigDecimal
 
 class JSONByte(val value: Byte): JSONNumber() {
+    override fun asBigDecimal(): BigDecimal = BigDecimal(this.value.toInt())
+
     override fun asByte(): Byte = this.value
 
     override fun asShort(): Short = this.value.toShort()

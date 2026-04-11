@@ -4,6 +4,8 @@ import com.github.cao.awa.cason.primary.JSONNumber
 import java.math.BigDecimal
 
 class JSONBigDecimal(val value: BigDecimal): JSONNumber() {
+    override fun asBigDecimal(): BigDecimal = this.value
+
     override fun asByte(): Byte = this.value.toByte()
 
     override fun asShort(): Short = this.value.toShort()

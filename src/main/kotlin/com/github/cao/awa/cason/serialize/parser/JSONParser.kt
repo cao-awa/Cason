@@ -13,10 +13,19 @@ import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.util.CasonUtil
 import java.math.BigDecimal
+import java.math.BigInteger
 import kotlin.math.pow
 
 open class JSONParser {
     companion object {
+        private val DIGIT = BooleanArray(128)
+
+        init {
+            for (c in '0'..'9') {
+                DIGIT[c.code] = true
+            }
+        }
+
         fun parseObject(input: String): JSONObject = parse(input) as JSONObject
         fun parseArray(input: String): JSONArray = parse(input) as JSONArray
 
@@ -49,7 +58,7 @@ open class JSONParser {
     fun eof(): Boolean = this.index >= this.end
 
     protected fun error(msg: String): Nothing {
-        throw JSONParseException("$msg at line ${this.line}, column ${this.col}")
+        throw JSONParseException("$msg, at line ${this.line}, column ${this.col}")
     }
 
     protected fun ensureAvailable() {
@@ -179,7 +188,9 @@ open class JSONParser {
         if (index < this.end) {
             val keyChar = chars[index]
             val result = when {
-                keyChar == '"' || keyChar == '\'' -> parseString(chars)
+                keyChar == '"' || keyChar == '\'' -> {
+                    parseString(chars)
+                }
                 keyChar == '+' || keyChar == '-' || keyChar == '.' || keyChar.isDigit() -> parseNumber(chars).toString()
                 CasonUtil.isIdStart(keyChar) -> parseIdentifier(chars)
                 else -> error("Invalid object key start '$keyChar'")
@@ -384,7 +395,7 @@ open class JSONParser {
                 if (currentChar == quote) {
                     this.index = index + 1
                     this.col += (index - start) + 1
-                    return String(chars, start, index - start)
+                    return String(chars, start + 1, index - start - 1)
                 }
                 if (currentChar == '\\') {
                     break
@@ -467,143 +478,133 @@ open class JSONParser {
         }
     }
 
-    protected fun parseNumber(chars: CharArray): JSONNumber {
-        val end = this.end
+    protected fun parseNumber(input: CharArray): JSONNumber {
+        val start = this.index
         var index = this.index
-        var col = this.col
-
-        var currentChar = chars[index]
+        var currentChar = input[index]
 
         var sign = 1
-        if (index < end) {
-            val first = currentChar
-            if (first == '+' || first == '-') {
-                sign = if (first == '-') -1 else 1
-                index++
-                col++
+        var size = 0
+        if (currentChar == '+' || currentChar == '-') {
+            if (currentChar == '-') {
+                sign = -1
             }
-
-            var mantissa = 0L
-            var digits = 0
-            var exp10 = 0
-            var overflow = false
-            var hasFraction = false
-            var hasExponent = false
-
-            // Integer part.
-            while (index < end && currentChar in '0'..'9') {
-                if (!overflow) {
-                    val d = currentChar.code - 48
-                    val n = mantissa * 10 + d
-                    if (n < mantissa) overflow = true else mantissa = n
-                }
-                digits++
-                index++
-                col++
-                currentChar = chars[index]
-            }
-
-            // Fraction.
-            if (index < end && chars[index] == '.') {
-                hasFraction = true
-                index++
-                col++
-                while (index < end && chars[index] in '0'..'9') {
-                    if (!overflow) {
-                        val d = chars[index].code - 48
-                        val n = mantissa * 10 + d
-                        if (n < mantissa) {
-                            overflow = true
-                        } else {
-                            mantissa = n
-                        }
-                    }
-                    digits++
-                    exp10--
-                    index++
-                    col++
-                }
-            }
-
-            if (digits == 0) {
-                error("Invalid number")
-            }
-
-            // Exponent.
-            if (index < end && (currentChar == 'e' || currentChar == 'E')) {
-                hasExponent = true
-                index++
-                col++
-
-                currentChar = chars[index]
-
-                var expSign = 1
-                if (currentChar == '+' || currentChar == '-') {
-                    expSign = if (currentChar == '-') {
-                        -1
-                    } else {
-                        1
-                    }
-                    index++
-                    col++
-                    currentChar = chars[index]
-                }
-
-                var exp = 0
-                var expDigits = 0
-                while (index < end && currentChar in '0'..'9') {
-                    exp = exp * 10 + (currentChar.code - 48)
-                    expDigits++
-                    index++
-                    col++
-                    currentChar = chars[index]
-                }
-                if (expDigits == 0) {
-                    error("Invalid exponent")
-                }
-                exp10 += expSign * exp
-            }
-
-            this.index = index
-            this.col = col
-
-            val signedMantissa = sign * mantissa
-
-            if (!hasFraction && !hasExponent && !overflow) {
-                if (signedMantissa in Int.MIN_VALUE..Int.MAX_VALUE) {
-                    return JSONNumber.ofInt(signedMantissa.toInt())
-                }
-                return JSONNumber.ofLong(signedMantissa)
-            }
-
-            if (!overflow) {
-                val d = signedMantissa.toDouble() * 10.0.pow(exp10.toDouble())
-                if (d.isFinite()) {
-                    val f = d.toFloat()
-                    if (f.toDouble() == d) {
-                        return JSONNumber.ofFloat(f)
-                    }
-                    return JSONNumber.ofDouble(d)
-                }
-            }
-
-            var bigDecimal = BigDecimal.valueOf(mantissa)
-            if (sign < 0) {
-                bigDecimal = bigDecimal.negate()
-            }
-            if (exp10 != 0) {
-                bigDecimal = bigDecimal.scaleByPowerOfTen(exp10)
-            }
-
-            return JSONNumber.adapter(bigDecimal)
+            currentChar = input[++index]
         }
 
-        if (this.isFinal) {
-            error("Invalid number")
+        var mantissa = 0L
+        var exp10 = 0
+        var hasFraction = false
+        var hasExponent = false
+
+        while (currentChar.code < 128 && DIGIT[currentChar.code]) {
+            mantissa = mantissa * 10 + (currentChar.code - 48)
+            currentChar = input[++index]
+            size++
         }
-        throw NeedMoreInputException(this.index, this.line, this.col)
+
+        if (currentChar == '.') {
+            hasFraction = true
+            currentChar = input[++index]
+            while (currentChar.code < 128 && DIGIT[currentChar.code]) {
+                mantissa = mantissa * 10 + (currentChar.code - 48)
+                exp10--
+                currentChar = input[++index]
+            }
+        }
+
+        if (currentChar == 'e' || currentChar == 'E') {
+            hasExponent = true
+        }
+
+        this.col = (index - start) + 1
+        this.index = index
+
+        val signed = sign * mantissa
+
+        if (!hasFraction && !hasExponent && size < 20) {
+            if (signed in Int.MIN_VALUE..Int.MAX_VALUE) {
+                return JSONNumber.ofInt(signed.toInt())
+            }
+            return JSONNumber.ofLong(signed)
+        }
+
+        if (size < 20) {
+            val d = signed.toDouble() * 10.0.pow(exp10.toDouble())
+            if (d.isFinite()) {
+                return JSONNumber.ofDouble(d)
+            }
+        }
+
+        this.index = start
+        this.col = 1
+
+        val bd = JSONNumber.adapter(parseBigDecimal(input))
+
+        return bd
+//        error("Number size out of range: $size")
     }
 
+    fun parseBigDecimal(input: CharArray): BigDecimal {
+        skipWsAndComments(input)
+        if (input.isEmpty()) {
+            throw NumberFormatException("Empty input")
+        }
+
+        var index = this.index
+        var negative = false
+
+        // Symbols
+        if (input[index] == '-') {
+            negative = true
+            index++
+        } else if (input[index] == '+') {
+            index++
+        }
+
+        val intPart = StringBuilder()
+        val fracPart = StringBuilder()
+        var isFraction = false
+
+        while (index < input.size) {
+            when (val c = input[index]) {
+                '.' -> {
+                    if (isFraction) {
+                        throw NumberFormatException("Multiple decimal points")
+                    }
+                    isFraction = true
+                }
+                in '0'..'9' -> {
+                    if (isFraction) {
+                        fracPart.append(c)
+                    } else {
+                        intPart.append(c)
+                    }
+                }
+                else -> {
+                    index++
+                    break
+                }
+            }
+            index++
+            this.col++
+        }
+
+        val unscaledStr = (intPart.toString() + fracPart.toString()).ifEmpty {
+            "0"
+        }
+        val scale = fracPart.length
+
+        var result = BigDecimal(BigInteger(unscaledStr), scale)
+
+        if (negative) {
+            result = result.negate()
+        }
+
+        this.index = index - 1
+
+        return result
+    }
 
     protected fun parseIdentifier(chars: CharArray): String {
         val start = this.index
