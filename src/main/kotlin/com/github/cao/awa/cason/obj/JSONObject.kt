@@ -42,7 +42,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.0
      */
-    constructor() : this(HashMap<String, JSONElement>())
+    constructor() : this(HashMap<String, JSONElement>(24))
 
     /**
      * Construct an empty JSONObject and run [body] to populate it.
@@ -57,7 +57,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.0
      */
-    constructor(body: JSONObject.() -> Unit) : this(HashMap<String, JSONElement>()) {
+    constructor(body: JSONObject.() -> Unit) : this(HashMap<String, JSONElement>(24)) {
         instruct(body)
     }
 
@@ -91,7 +91,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.0
      */
-    fun array(body: JSONArray.() -> Unit): JSONArray = JSONArray(body)
+    fun arr(body: JSONArray.() -> Unit): JSONArray = JSONArray(body)
 
     /**
      * Create and insert a new [JSONArray] under [key] by executing [body].
@@ -102,7 +102,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @author cao_awa
      */
-    fun array(key: String, body: JSONArray.() -> Unit): JSONArray = array(body).also {
+    fun arr(key: String, body: JSONArray.() -> Unit): JSONArray = arr(body).also {
         put(key, it)
     }
 
@@ -117,7 +117,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.0
      */
-    fun json(body: JSONObject.() -> Unit): JSONObject = JSONObject(body)
+    fun obj(body: JSONObject.() -> Unit): JSONObject = JSONObject(body)
 
     /**
      * Create and insert a new [JSONObject] under [key] by executing [body].
@@ -130,7 +130,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.0
      */
-    fun json(key: String, body: JSONObject.() -> Unit): JSONObject = json(body).also {
+    fun obj(key: String, body: JSONObject.() -> Unit): JSONObject = obj(body).also {
         put(key, it)
     }
 
@@ -1108,7 +1108,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.0
      */
-    private fun getElement(key: String): JSONElement {
+    fun getElement(key: String): JSONElement {
         completePending()
         return this.map[key] ?: JSONNull
     }

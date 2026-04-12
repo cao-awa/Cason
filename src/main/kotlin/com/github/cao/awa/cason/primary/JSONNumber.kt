@@ -26,22 +26,6 @@ abstract class JSONNumber : JSONElement {
         fun ofFloat(value: Float): JSONFloat = JSONFloat(value)
         fun ofDouble(value: Double): JSONDouble = JSONDouble(value)
         fun ofBig(value: BigDecimal): JSONBigDecimal = JSONBigDecimal(value)
-
-        fun adapter(bigDecimal: BigDecimal): JSONNumber {
-            val precision = bigDecimal.precision()
-            // Decimal
-            if (bigDecimal.stripTrailingZeros().scale() > 0) {
-                return ofDouble(bigDecimal.toDouble())
-            }
-            // Integer.
-            if (precision < 20) {
-                if (precision < 10) {
-                    return ofInt(bigDecimal.toInt())
-                }
-                return ofLong(bigDecimal.longValueExact())
-            }
-            return ofBig(bigDecimal)
-        }
     }
 
     abstract fun asBigDecimal(): BigDecimal

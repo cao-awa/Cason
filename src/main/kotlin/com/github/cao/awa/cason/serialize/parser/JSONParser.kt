@@ -107,25 +107,30 @@ open class JSONParser {
                 this.col += 4
                 JSONNull
             }
+
             't' -> {
                 this.index += 4
                 this.col += 4
                 JSONBoolean.TRUE
             }
+
             'f' -> {
                 this.index += 5
                 this.col += 5
                 JSONBoolean.FALSE
             }
+
             'I' -> {
                 this.index += 8
                 JSONNumber.POSITIVE_INFINITY
             }
+
             'N' -> {
                 this.index += 3
                 this.col += 3
                 JSONNumber.NAN
             }
+
             else -> error("Unexpected identifier '${parseIdentifier(chars)}'")
         }
     }
@@ -191,6 +196,7 @@ open class JSONParser {
                 keyChar == '"' || keyChar == '\'' -> {
                     parseString(chars)
                 }
+
                 keyChar == '+' || keyChar == '-' || keyChar == '.' || keyChar.isDigit() -> parseNumber(chars).toString()
                 CasonUtil.isIdStart(keyChar) -> parseIdentifier(chars)
                 else -> error("Invalid object key start '$keyChar'")
@@ -539,7 +545,7 @@ open class JSONParser {
         this.index = start
         this.col = 1
 
-        val bd = JSONNumber.adapter(parseBigDecimal(input))
+        val bd = JSONNumber.ofBig(parseBigDecimal(input))
 
         return bd
 //        error("Number size out of range: $size")
@@ -574,6 +580,7 @@ open class JSONParser {
                     }
                     isFraction = true
                 }
+
                 in '0'..'9' -> {
                     if (isFraction) {
                         fracPart.append(c)
@@ -581,6 +588,7 @@ open class JSONParser {
                         intPart.append(c)
                     }
                 }
+
                 else -> {
                     index++
                     break
@@ -590,12 +598,15 @@ open class JSONParser {
             this.col++
         }
 
-        val unscaledStr = (intPart.toString() + fracPart.toString()).ifEmpty {
-            "0"
+        val unscaledStr = if (!fracPart.isEmpty()) {
+            "$intPart.$fracPart"
+        } else {
+            intPart.toString().ifEmpty { "0" }
         }
         val scale = fracPart.length
 
-        var result = BigDecimal(BigInteger(unscaledStr), scale)
+        var result = BigDecimal(unscaledStr)
+        result = result.setScale(scale)
 
         if (negative) {
             result = result.negate()

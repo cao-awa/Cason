@@ -1,6 +1,5 @@
 import com.alibaba.fastjson2.JSON
 import com.github.cao.awa.cason.annotation.Field
-import com.github.cao.awa.cason.annotation.Flattened
 import com.github.cao.awa.cason.annotation.Nested
 import com.github.cao.awa.cason.binary.JSONBinaryDecoder
 import com.github.cao.awa.cason.binary.JSONBinaryEncoder
@@ -20,7 +19,7 @@ fun binary() {
     val json = JSONObject {
         "awa" set 1234
         "nes" nested Nested("qaq", 123456789, TestInnerData("inner string"))
-        array("test") {
+        arr("test") {
             +"awa"
             add(JSONObject {
                 "awa" set 9876543210
@@ -108,7 +107,7 @@ fun path() {
                 it * 100
             }
 
-            "array" set array {
+            "array" set arr {
                 +"awa"
                 +"qaq"
                 +"owo"
@@ -126,13 +125,13 @@ fun dsl() {
     val json = JSONObject {
         "name" set "Cason"
         "version" set "1.0.0"
-        array("keywords") {
+        arr("keywords") {
             add("kotlin")
             add("json")
             add("json5")
             add("parser")
         }
-        json("awa") {
+        obj("awa") {
             "test-awa" set "awa"
             "test-number" set 1234567
         }
@@ -189,7 +188,7 @@ fun parsing() {
     "max_count": 64,
     "use_action": "eat"
   },
-  "test": 111111111111111111111111111111
+  "test": 111111111111111111111111111111.0123
 }
     """
 
@@ -197,7 +196,8 @@ fun parsing() {
 
     val testCount = 100000
 
-    (JSONParser.parse(charData) as JSONObject).getNumber("test")
+    println((JSONParser.parse(charData) as JSONObject).getElement("test"))
+    println((JSON.parseObject(charData)).getBigDecimal("test"))
 
 //    benchmark(testCount, "Cason") {
 //        JSONParser.parse(charData)
