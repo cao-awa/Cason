@@ -545,10 +545,7 @@ open class JSONParser {
         this.index = start
         this.col = 1
 
-        val bd = JSONNumber.ofBig(parseBigDecimal(input))
-
-        return bd
-//        error("Number size out of range: $size")
+        return JSONNumber.ofBig(parseBigDecimal(input))
     }
 
     fun parseBigDecimal(input: CharArray): BigDecimal {
@@ -601,7 +598,7 @@ open class JSONParser {
         val unscaledStr = if (!fracPart.isEmpty()) {
             "$intPart.$fracPart"
         } else {
-            intPart.toString().ifEmpty { "0" }
+            intPart.toString()
         }
         val scale = fracPart.length
 

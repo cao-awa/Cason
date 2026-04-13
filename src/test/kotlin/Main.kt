@@ -196,24 +196,21 @@ fun parsing() {
 
     val testCount = 100000
 
-    println((JSONParser.parse(charData) as JSONObject).getElement("test"))
-    println((JSON.parseObject(charData)).getBigDecimal("test"))
+    benchmark(testCount, "Cason") {
+        JSONParser.parse(charData)
+    }
 
-//    benchmark(testCount, "Cason") {
-//        JSONParser.parse(charData)
-//    }
-//
-//    benchmark(testCount, "Cason-strict") {
-//        StrictJSONParser.parse(charData)
-//    }
-//
-//    benchmark(testCount, "fastjson2") {
-//        JSON.parseObject(charData)
-//    }
-//
-//    benchmark(testCount, "org.json") {
-//        org.json.JSONObject(data)
-//    }
+    benchmark(testCount, "Cason-strict") {
+        StrictJSONParser.parse(charData)
+    }
+
+    benchmark(testCount, "fastjson2") {
+        JSON.parseObject(charData)
+    }
+
+    benchmark(testCount, "org.json") {
+        org.json.JSONObject(data)
+    }
 }
 
 fun benchmark(count: Int, sampleName: String, action: () -> Unit) {
