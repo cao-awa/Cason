@@ -632,14 +632,88 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      */
     fun getArray(key: String): JSONArray? = getElement(key) as? JSONArray
 
-    /** Get a JSON object stored under [key], or null if absent or mismatched. */
+    /**
+     * Use an array value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifArray(key: String, user: JSONArray.() -> Unit) {
+        val arr = getArray(key)
+        if (arr != null) {
+            user(arr)
+        }
+    }
+
+    /**
+     * Get a JSON object stored under [key], or null if absent or mismatched.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
     fun getJSON(key: String): JSONObject? = getElement(key) as? JSONObject
 
-    /** Get a string stored under [key], or null if absent or mismatched. */
+    /**
+     * Use a JSON object value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifJSON(key: String, user: JSONObject.() -> Unit) {
+        val obj = getJSON(key)
+        if (obj != null) {
+            user(obj)
+        }
+    }
+
+    /**
+     * Get a string stored under [key], or null if absent or mismatched.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
     fun getString(key: String): String? = (getElement(key) as? JSONString)?.asString()
 
-    /** Get a boolean stored under [key], or null if absent or mismatched. */
+    /**
+     * Use a string value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifString(key: String, user: String.() -> Unit) {
+        val str = getString(key)
+        if (str != null) {
+            user(str)
+        }
+    }
+
+    /**
+     * Get a boolean stored under [key], or null if absent or mismatched.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
     fun getBoolean(key: String): Boolean? = (getElement(key) as? JSONBoolean)?.value
+
+    /**
+     * Use a boolean value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifString(key: String, user: Boolean.() -> Unit) {
+        val b = getBoolean(key)
+        if (b != null) {
+            user(b)
+        }
+    }
 
     /**
      * Numeric getters that attempt to coerce to the target type or return null.
@@ -651,13 +725,111 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.0
      */
-    fun getNumber(key: String): BigDecimal = (getElement(key) as JSONNumber).asBigDecimal()
+    fun getNumber(key: String): BigDecimal? = (getElement(key) as? JSONNumber)?.asBigDecimal()
     fun getByte(key: String): Byte? = (getElement(key) as? JSONNumber)?.asByte()
     fun getShort(key: String): Short? = (getElement(key) as? JSONNumber)?.asShort()
     fun getInt(key: String): Int? = (getElement(key) as? JSONNumber)?.asInt()
     fun getLong(key: String): Long? = (getElement(key) as? JSONNumber)?.asLong()
     fun getFloat(key: String): Float? = (getElement(key) as? JSONNumber)?.asFloat()
     fun getDouble(key: String): Double? = (getElement(key) as? JSONNumber)?.asDouble()
+
+    /**
+     * Use a big decimal number value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifNumber(key: String, user: BigDecimal.() -> Unit) {
+        val num = getNumber(key)
+        if (num != null) {
+            user(num)
+        }
+    }
+
+    /**
+     * Use a byte value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifByte(key: String, user: Byte.() -> Unit) {
+        val b = getByte(key)
+        if (b != null) {
+            user(b)
+        }
+    }
+
+    /**
+     * Use a short value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifShort(key: String, user: Short.() -> Unit) {
+        val num = getShort(key)
+        if (num != null) {
+            user(num)
+        }
+    }
+
+    /**
+     * Use an integer value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifInt(key: String, user: Int.() -> Unit) {
+        val num = getInt(key)
+        if (num != null) {
+            user(num)
+        }
+    }
+
+    /**
+     * Use a long value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifLong(key: String, user: Long.() -> Unit) {
+        val num = getLong(key)
+        if (num != null) {
+            user(num)
+        }
+    }
+
+    /**
+     * Use a float value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifFloat(key: String, user: Float.() -> Unit) {
+        val num = getFloat(key)
+        if (num != null) {
+            user(num)
+        }
+    }
+
+    /**
+     * Use a double value if it not null.
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun ifDouble(key: String, user: Double.() -> Unit) {
+        val num = getDouble(key)
+        if (num != null) {
+            user(num)
+        }
+    }
 
     /**
      * Decode a nested Kotlin object of type [T] from the JSON object stored
@@ -1055,11 +1227,11 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @author cao_awa
      *
-     * @since 1.0.0
+     * @since 1.0.28
      */
-    fun path(path: String, body: JSONObject.() -> Unit): JSONObject {
+    fun path(path: String, delimiter: Char = '.', body: JSONObject.() -> Unit): JSONObject {
         var base = this
-        path.split('.').forEach { key: String ->
+        path.split(delimiter).forEach { key: String ->
             // Use 'getJSON' by base to prevent repeat using path cleaning old data.
             base = base.getJSON(key) ?: JSONObject {
                 // Put new JSON object if not present.
