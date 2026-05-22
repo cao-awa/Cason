@@ -708,7 +708,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      *
      * @since 1.0.28
      */
-    fun ifString(key: String, user: Boolean.() -> Unit) {
+    fun ifBoolean(key: String, user: Boolean.() -> Unit) {
         val b = getBoolean(key)
         if (b != null) {
             user(b)
