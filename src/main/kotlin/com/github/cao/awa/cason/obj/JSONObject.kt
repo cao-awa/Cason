@@ -1261,6 +1261,21 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     }
 
     /**
+     * Iterate over each entry in the backing map and invoke [action].
+     *
+     * @param action consumer invoked with each mutable map entry
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.28
+     */
+    fun forEach(action: (String, JSONElement) -> Unit) {
+        for ((key, value) in this.map) {
+            action(key, value)
+        }
+    }
+
+    /**
      * Return size of this object.
      *
      * @author cao_awa
