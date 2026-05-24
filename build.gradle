@@ -8,16 +8,6 @@ group = project.group_id
 version = project.version_name
 
 publishing {
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = "https://maven.pkg.github.com/cao-awa/Cason"
-            credentials {
-                username = System.getenv("GH_ACTOR")
-                password = System.getenv("GH_TOKEN")
-            }
-        }
-    }
     publications {
         gpr(MavenPublication) {
             groupId = project.group_id
@@ -48,6 +38,7 @@ kotlin {
 
 test {
     useJUnitPlatform()
-
-    failOnNoDiscoveredTests = false
 }
+
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
