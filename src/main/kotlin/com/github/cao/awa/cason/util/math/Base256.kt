@@ -12,16 +12,6 @@ object Base256 {
      * @author cao_awa
      * @since 1.0.0
      */
-    /**
-     * Convert a long to 8 bytes.
-     *
-     * @param l
-     * Long input
-     * @return Bytes result
-     *
-     * @author cao_awa
-     * @since 1.0.0
-     */
     @JvmOverloads
     fun longToBuf(l: Long, buf: ByteArray = ByteArray(8)): ByteArray {
         buf[0] = (l ushr 56).toByte()
@@ -64,16 +54,6 @@ object Base256 {
      * @return Bytes result
      *
      * @author InkerBot
-     * @author cao_awa
-     * @since 1.0.0
-     */
-    /**
-     * Convert an integer to 4 bytes.
-     *
-     * @param i
-     * Integer input
-     * @return Bytes result
-     *
      * @author cao_awa
      * @since 1.0.0
      */
@@ -127,20 +107,92 @@ object Base256 {
      * @author cao_awa
      * @since 1.0.0
      */
-    /**
-     * Convert an integer to 2 bytes.
-     *
-     * @param i
-     * Integer input
-     * @return Bytes result
-     *
-     * @author cao_awa
-     * @since 1.0.0
-     */
     @JvmOverloads
     fun tagToBuf(i: Int, buf: ByteArray = ByteArray(2)): ByteArray {
         buf[0] = (i ushr 8).toByte()
         buf[1] = (i).toByte()
         return buf
+    }
+
+    /**
+     * Convert a float to 4 bytes (IEEE 754 binary32, big-endian).
+     *
+     * @param f Float input
+     * @param buf Bytes output (must have length ≥ 4)
+     * @return Bytes result
+     *
+     * @author (your name)
+     * @since 1.0.0
+     */
+    @JvmOverloads
+    fun floatToBuf(f: Float, buf: ByteArray = ByteArray(4)): ByteArray {
+        val bits = f.toBits()
+        buf[0] = (bits ushr 24).toByte()
+        buf[1] = (bits ushr 16).toByte()
+        buf[2] = (bits ushr 8).toByte()
+        buf[3] = (bits).toByte()
+        return buf
+    }
+
+    /**
+     * Convert 4 bytes to a float (IEEE 754 binary32, big-endian).
+     *
+     * @param buf Bytes input (must have length ≥ 4)
+     * @return Float result
+     *
+     * @author (your name)
+     * @since 1.0.0
+     */
+    fun floatFromBuf(buf: ByteArray): Float {
+        val bits = ((buf[0].toInt() and 0xFF) shl 24) +
+                ((buf[1].toInt() and 0xFF) shl 16) +
+                ((buf[2].toInt() and 0xFF) shl 8) +
+                ((buf[3].toInt() and 0xFF))
+        return Float.fromBits(bits)
+    }
+
+    /**
+     * Convert a double to 8 bytes (IEEE 754 binary64, big-endian).
+     *
+     * @param d Double input
+     * @param buf Bytes output (must have length ≥ 8)
+     * @return Bytes result
+     *
+     * @author (your name)
+     * @since 1.0.0
+     */
+    @JvmOverloads
+    fun doubleToBuf(d: Double, buf: ByteArray = ByteArray(8)): ByteArray {
+        val bits = d.toBits()
+        buf[0] = (bits ushr 56).toByte()
+        buf[1] = (bits ushr 48).toByte()
+        buf[2] = (bits ushr 40).toByte()
+        buf[3] = (bits ushr 32).toByte()
+        buf[4] = (bits ushr 24).toByte()
+        buf[5] = (bits ushr 16).toByte()
+        buf[6] = (bits ushr 8).toByte()
+        buf[7] = (bits).toByte()
+        return buf
+    }
+
+    /**
+     * Convert 8 bytes to a double (IEEE 754 binary64, big-endian).
+     *
+     * @param buf Bytes input (must have length ≥ 8)
+     * @return Double result
+     *
+     * @author (your name)
+     * @since 1.0.0
+     */
+    fun doubleFromBuf(buf: ByteArray): Double {
+        val bits = ((buf[0].toLong() and 0xFFL) shl 56) +
+                ((buf[1].toLong() and 0xFFL) shl 48) +
+                ((buf[2].toLong() and 0xFFL) shl 40) +
+                ((buf[3].toLong() and 0xFFL) shl 32) +
+                ((buf[4].toLong() and 0xFFL) shl 24) +
+                ((buf[5].toLong() and 0xFFL) shl 16) +
+                ((buf[6].toLong() and 0xFFL) shl 8) +
+                ((buf[7].toLong() and 0xFFL))
+        return Double.fromBits(bits)
     }
 }

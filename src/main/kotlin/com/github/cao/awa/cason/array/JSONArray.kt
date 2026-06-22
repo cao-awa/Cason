@@ -19,6 +19,7 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     }
 
     fun add(): JSONArray = add(JSONNull)
+
     fun add(value: JSONObject): JSONArray {
         this.list.add(value)
         return this
@@ -105,16 +106,16 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
     fun computeFloat(index: Int, back: (Float?) -> Float): JSONArray = set(index, back(getFloat(index)))
     fun computeDouble(index: Int, back: (Double?) -> Double): JSONArray = set(index, back(getDouble(index)))
 
-    fun set(index: Int, value: JSONArray) = setElement(index, value)
-    fun set(index: Int, value: JSONObject) = setElement(index, value)
-    fun set(index: Int, value: String) = setElement(index, JSONString(value))
-    fun set(index: Int, value: Boolean) = setElement(index, JSONBoolean.of(value))
-    fun set(index: Int, value: Byte) = setElement(index, JSONNumber.ofByte(value))
-    fun set(index: Int, value: Short) = setElement(index, JSONNumber.ofShort(value))
-    fun set(index: Int, value: Int) = setElement(index, JSONNumber.ofInt(value))
-    fun set(index: Int, value: Long) = setElement(index, JSONNumber.ofLong(value))
-    fun set(index: Int, value: Float) = setElement(index, JSONNumber.ofFloat(value))
-    fun set(index: Int, value: Double) = setElement(index, JSONNumber.ofDouble(value))
+    operator fun set(index: Int, value: JSONArray) = setElement(index, value)
+    operator fun set(index: Int, value: JSONObject) = setElement(index, value)
+    operator fun set(index: Int, value: String) = setElement(index, JSONString(value))
+    operator fun set(index: Int, value: Boolean) = setElement(index, JSONBoolean.of(value))
+    operator fun set(index: Int, value: Byte) = setElement(index, JSONNumber.ofByte(value))
+    operator fun set(index: Int, value: Short) = setElement(index, JSONNumber.ofShort(value))
+    operator fun set(index: Int, value: Int) = setElement(index, JSONNumber.ofInt(value))
+    operator fun set(index: Int, value: Long) = setElement(index, JSONNumber.ofLong(value))
+    operator fun set(index: Int, value: Float) = setElement(index, JSONNumber.ofFloat(value))
+    operator fun set(index: Int, value: Double) = setElement(index, JSONNumber.ofDouble(value))
 
     fun isEmpty(): Boolean = this.list.isEmpty()
 
@@ -124,6 +125,8 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
         this.list[index] = value
         return this
     }
+
+    operator fun get(index: Int): JSONElement? = getElement(index)
 
     private fun getElement(index: Int): JSONElement? {
         return this.list[index].let {
