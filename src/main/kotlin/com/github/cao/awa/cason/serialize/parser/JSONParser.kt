@@ -484,134 +484,341 @@ open class JSONParser {
         }
     }
 
+    /**
+     * Parse a JSON number.
+     *
+     * Supported forms:
+     *   123
+     *   +123
+     *   -123
+     *   123.45
+     *   .45
+     *   123.
+     *   1e10
+     *   1.5e-10
+     *   +1.5E+10
+     *
+     * The parser first scans the complete number token and then chooses
+     * an appropriate representation:
+     *
+     *   Int -> Long -> Double -> BigDecimal
+     *
+     * BigDecimal is used as the final lossless fallback.
+     */
     protected fun parseNumber(input: CharArray): JSONNumber {
         val start = this.index
-        var index = this.index
-        var currentChar = input[index]
+        var i = start
 
-        var sign = 1
-        var size = 0
-        if (currentChar == '+' || currentChar == '-') {
-            if (currentChar == '-') {
-                sign = -1
-            }
-            currentChar = input[++index]
+        if (i >= this.end) {
+            ensureAvailable()
         }
 
-        var mantissa = 0L
-        var exp10 = 0
+        // Sign.
+        if (input[i] == '+' || input[i] == '-') {
+            i++
+
+            if (i >= this.end) {
+                if (!this.isFinal) {
+                    throw NeedMoreInputException(i, this.line, this.col)
+                }
+                error("Incomplete number")
+            }
+        }
+
+        // Integer part.
+        //
+        // Intentionally allow:
+        //   123
+        //   .123
+        //
+        // and also preserve the existing parser's support for:
+        //   123.
+        var integerDigits = 0
+
+        while (i < this.end) {
+            val c = input[i]
+            if (c in '0'..'9') {
+                integerDigits++
+                i++
+            } else {
+                break
+            }
+        }
+
+        // Fraction.
         var hasFraction = false
-        var hasExponent = false
+        var fractionDigits = 0
 
-        while (currentChar.code < 128 && DIGIT[currentChar.code]) {
-            mantissa = mantissa * 10 + (currentChar.code - 48)
-            currentChar = input[++index]
-            size++
-        }
-
-        if (currentChar == '.') {
+        if (i < this.end && input[i] == '.') {
             hasFraction = true
-            currentChar = input[++index]
-            while (currentChar.code < 128 && DIGIT[currentChar.code]) {
-                mantissa = mantissa * 10 + (currentChar.code - 48)
-                exp10--
-                currentChar = input[++index]
-            }
-        }
+            i++
 
-        if (currentChar == 'e' || currentChar == 'E') {
-            hasExponent = true
-        }
-
-        this.col = (index - start) + 1
-        this.index = index
-
-        val signed = sign * mantissa
-
-        if (!hasFraction && !hasExponent && size < 20) {
-            if (signed in Int.MIN_VALUE..Int.MAX_VALUE) {
-                return JSONNumber.ofInt(signed.toInt())
-            }
-            return JSONNumber.ofLong(signed)
-        }
-
-        if (size < 20) {
-            val d = signed.toDouble() * 10.0.pow(exp10.toDouble())
-            if (d.isFinite()) {
-                return JSONNumber.ofDouble(d)
-            }
-        }
-
-        this.index = start
-        this.col = 1
-
-        return JSONNumber.ofBig(parseBigDecimal(input))
-    }
-
-    fun parseBigDecimal(input: CharArray): BigDecimal {
-        skipWsAndComments(input)
-        if (input.isEmpty()) {
-            throw NumberFormatException("Empty input")
-        }
-
-        var index = this.index
-        var negative = false
-
-        // Symbols
-        if (input[index] == '-') {
-            negative = true
-            index++
-        } else if (input[index] == '+') {
-            index++
-        }
-
-        val intPart = StringBuilder()
-        val fracPart = StringBuilder()
-        var isFraction = false
-
-        while (index < input.size) {
-            when (val c = input[index]) {
-                '.' -> {
-                    if (isFraction) {
-                        throw NumberFormatException("Multiple decimal points")
-                    }
-                    isFraction = true
-                }
-
-                in '0'..'9' -> {
-                    if (isFraction) {
-                        fracPart.append(c)
-                    } else {
-                        intPart.append(c)
-                    }
-                }
-
-                else -> {
-                    index++
+            while (i < this.end) {
+                val c = input[i]
+                if (c in '0'..'9') {
+                    fractionDigits++
+                    i++
+                } else {
                     break
                 }
             }
-            index++
-            this.col++
+
+            // Keep compatibility with the original parser:
+            // "1." is accepted.
+            //
+            // But "." alone is not a valid number.
+            if (integerDigits == 0 && fractionDigits == 0) {
+                error("Invalid number")
+            }
         }
 
-        val unscaledStr = if (!fracPart.isEmpty()) {
-            "$intPart.$fracPart"
-        } else {
-            intPart.toString()
-        }
-        val scale = fracPart.length
-
-        var result = BigDecimal(unscaledStr)
-        result = result.setScale(scale)
-
-        if (negative) {
-            result = result.negate()
+        // "." without an integer part and without fraction digits
+        // has already been rejected above.
+        if (integerDigits == 0 && fractionDigits == 0) {
+            error("Invalid number")
         }
 
-        this.index = index - 1
+        // Exponent.
+        var hasExponent = false
+        var exponentDigits = 0
 
-        return result
+        if (i < this.end && (input[i] == 'e' || input[i] == 'E')) {
+            hasExponent = true
+            i++
+
+            if (i >= this.end) {
+                if (!this.isFinal) {
+                    throw NeedMoreInputException(i, this.line, this.col)
+                }
+                error("Incomplete exponent")
+            }
+
+            if (input[i] == '+' || input[i] == '-') {
+                i++
+
+                if (i >= this.end) {
+                    if (!this.isFinal) {
+                        throw NeedMoreInputException(i, this.line, this.col)
+                    }
+                    error("Incomplete exponent")
+                }
+            }
+
+            while (i < this.end) {
+                val c = input[i]
+                if (c in '0'..'9') {
+                    exponentDigits++
+                    i++
+                } else {
+                    break
+                }
+            }
+
+            if (exponentDigits == 0) {
+                error("Expected exponent digits")
+            }
+        }
+
+        // If the number reaches the end of a non-final input buffer,
+        // we cannot know whether the number continues in the next chunk.
+        //
+        // Example:
+        //   "123" + next chunk "456"
+        //
+        // Therefore streaming callers must retry when the token ends
+        // exactly at the current buffer boundary.
+        if (i >= this.end && !this.isFinal) {
+            throw NeedMoreInputException(i, this.line, this.col)
+        }
+
+        // Number must be followed by a legal delimiter.
+        //
+        // Without this check:
+        //   123abc
+        //
+        // could incorrectly become two unrelated tokens.
+        if (i < this.end && !isNumberDelimiter(input[i])) {
+            error("Invalid character '${input[i]}' after number")
+        }
+
+        val tokenLength = i - start
+        val token = String(input, start, tokenLength)
+
+        // Commit parser position exactly once.
+        this.index = i
+        this.col += tokenLength
+
+        // Integer
+        if (!hasFraction && !hasExponent) {
+            // Avoid Long overflow entirely by checking the token through
+            // BigInteger only when necessary.
+            //
+            // Small integers remain allocation-free in the common case.
+            if (tokenLength <= 10) {
+                val value = token.toLong()
+
+                if (value in Int.MIN_VALUE..Int.MAX_VALUE) {
+                    return JSONNumber.ofInt(value.toInt())
+                }
+
+                return JSONNumber.ofLong(value)
+            }
+
+            if (tokenLength <= 19) {
+                val value = token.toLongOrNull()
+
+                if (value != null) {
+                    if (value in Int.MIN_VALUE..Int.MAX_VALUE) {
+                        return JSONNumber.ofInt(value.toInt())
+                    }
+
+                    return JSONNumber.ofLong(value)
+                }
+            }
+
+            // Too large for Long.
+            return JSONNumber.ofBig(BigDecimal(token))
+        }
+
+        // Decimal / exponent
+        //
+        // Keep the existing behavior of using Double for reasonably
+        // small finite numbers, but fall back to BigDecimal when Double
+        // overflows or the representation is too large.
+        if (tokenLength <= 20) {
+            val value = token.toDoubleOrNull()
+
+            if (value != null && value.isFinite()) {
+                return JSONNumber.ofDouble(value)
+            }
+        }
+
+        // Exact fallback.
+        return JSONNumber.ofBig(BigDecimal(token))
+    }
+
+
+    /**
+     * Characters which can legally terminate a number.
+     *
+     * Whitespace/comments are handled by the caller, so they are valid
+     * delimiters here.
+     */
+    private fun isNumberDelimiter(c: Char): Boolean {
+        return when (c) {
+            ',', ']', '}', ':',
+            ' ', '\t', '\n', '\r', '\u2028', '\u2029',
+            '/' -> true
+
+            else -> false
+        }
+    }
+
+
+    /**
+     * Parse the current number as BigDecimal.
+     *
+     * Unlike the old implementation, this supports:
+     *
+     *   123
+     *   -123
+     *   1.23
+     *   .23
+     *   1e10
+     *   1.23e-10
+     *   +1.23E+10
+     *
+     * The parser position is advanced to the character immediately
+     * following the number.
+     */
+    fun parseBigDecimal(input: CharArray): BigDecimal {
+        val start = this.index
+        var i = start
+
+        if (i >= this.end) {
+            if (!this.isFinal) {
+                throw NeedMoreInputException(i, this.line, this.col)
+            }
+            throw NumberFormatException("Empty input")
+        }
+
+        // Sign
+        if (input[i] == '+' || input[i] == '-') {
+            i++
+
+            if (i >= this.end) {
+                if (!this.isFinal) {
+                    throw NeedMoreInputException(i, this.line, this.col)
+                }
+                throw NumberFormatException("Incomplete number")
+            }
+        }
+
+        var integerDigits = 0
+
+        while (i < this.end && input[i] in '0'..'9') {
+            integerDigits++
+            i++
+        }
+
+        var fractionDigits = 0
+
+        if (i < this.end && input[i] == '.') {
+            i++
+
+            while (i < this.end && input[i] in '0'..'9') {
+                fractionDigits++
+                i++
+            }
+        }
+
+        if (integerDigits == 0 && fractionDigits == 0) {
+            throw NumberFormatException("Invalid number")
+        }
+
+        // Exponent
+        if (i < this.end && (input[i] == 'e' || input[i] == 'E')) {
+            i++
+
+            if (i >= this.end) {
+                if (!this.isFinal) {
+                    throw NeedMoreInputException(i, this.line, this.col)
+                }
+                throw NumberFormatException("Incomplete exponent")
+            }
+
+            if (input[i] == '+' || input[i] == '-') {
+                i++
+            }
+
+            val exponentStart = i
+
+            while (i < this.end && input[i] in '0'..'9') {
+                i++
+            }
+
+            if (i == exponentStart) {
+                throw NumberFormatException("Expected exponent digits")
+            }
+        }
+
+        if (i >= this.end && !this.isFinal) {
+            throw NeedMoreInputException(i, this.line, this.col)
+        }
+
+        if (i < this.end && !isNumberDelimiter(input[i])) {
+            throw NumberFormatException(
+                "Invalid character '${input[i]}' after number"
+            )
+        }
+
+        val length = i - start
+        val token = String(input, start, length)
+
+        this.index = i
+        this.col += length
+
+        return BigDecimal(token)
     }
 
     protected fun parseIdentifier(chars: CharArray): String {

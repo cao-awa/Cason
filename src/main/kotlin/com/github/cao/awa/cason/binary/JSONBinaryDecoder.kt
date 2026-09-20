@@ -5,6 +5,7 @@ import com.github.cao.awa.cason.array.JSONArray
 import com.github.cao.awa.cason.binary.compress.BinaryCompress
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.primary.JSONBoolean
+import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.primary.number.JSONBigDecimal
@@ -44,7 +45,6 @@ class JSONBinaryDecoder {
             return decode(data) as JSONObject
         }
 
-
         fun decodeArray(data: ByteArray): JSONArray {
             return decode(data) as JSONArray
         }
@@ -65,8 +65,14 @@ class JSONBinaryDecoder {
                 11 -> JSONNaN
                 12 -> JSONPositiveInfinity
                 13 -> JSONNegativeInfinity
+                14 -> decodeNull(input)
                 else -> error("Unexpected input tag: $tag")
             }
+        }
+
+        private fun decodeNull(input: InputStream): JSONNull {
+            input.read()
+            return JSONNull
         }
 
         private fun decodeByte(input: InputStream): JSONByte {

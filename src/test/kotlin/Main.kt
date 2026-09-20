@@ -14,31 +14,32 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 
 fun main() {
-    JSONParser.parse("""
-        {
-            "server_host": "0.0.0.0",
-            "print_config_details": true,
-            "entrypoint": [
-                "com.github.cao.awa.kora.external.SampleEntrypoint#entry",
-                "com.github.cao.awa.kora.entry.KoraKotlinEntryPoint#entry"
-            ],
-            "server_port": 12345,
-            "asset_manager": {
-                "error_page": "error/404.html",
-                "asset_path": "assets/"
-            },
-            "netty": {
-                "reuse_address": true,
-                "backlog": 8192,
-                "allocator": "default",
-                "keep_alive": true,
-                "rcv_buffer": 65536,
-                "tcp_no_delay": true
-            }
-        }
-    """.trimIndent()).also {
-        println(it.toString())
-    }
+//    JSONParser.parse("""
+//        {
+//            "server_host": "0.0.0.0",
+//            "print_config_details": true,
+//            "entrypoint": [
+//                "com.github.cao.awa.kora.external.SampleEntrypoint#entry",
+//                "com.github.cao.awa.kora.entry.KoraKotlinEntryPoint#entry"
+//            ],
+//            "server_port": 12345,
+//            "asset_manager": {
+//                "error_page": "error/404.html",
+//                "asset_path": "assets/"
+//            },
+//            "netty": {
+//                "reuse_address": true,
+//                "backlog": 8192,
+//                "allocator": "default",
+//                "keep_alive": true,
+//                "rcv_buffer": 65536,
+//                "tcp_no_delay": true
+//            }
+//        }
+//    """.trimIndent()).also {
+//        println(it.toString())
+//    }
+    binary()
 }
 
 fun binary() {
@@ -52,7 +53,7 @@ fun binary() {
                 "1" set true
                 "2" set true
                 "3" set false
-                "4" set false
+                "4" set null
             })
         }
     }

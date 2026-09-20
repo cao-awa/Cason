@@ -5,6 +5,7 @@ import com.github.cao.awa.cason.array.JSONArray
 import com.github.cao.awa.cason.binary.compress.BinaryCompress
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.primary.JSONBoolean
+import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.primary.number.JSONBigDecimal
 import com.github.cao.awa.cason.primary.number.JSONByte
@@ -43,6 +44,7 @@ class JSONBinaryEncoder {
             it[JSONNaN::class] = 11
             it[JSONPositiveInfinity::class] = 12
             it[JSONNegativeInfinity::class] = 13
+            it[JSONNull::class] = 14
         }
 
         fun encode(value: JSONObject): ByteArray {
@@ -61,6 +63,7 @@ class JSONBinaryEncoder {
 
         private fun encodeElement(value: JSONElement, output: OutputStream) {
             when (value) {
+                is JSONNull -> encodeNull(value, output)
                 is JSONObject -> encodeObject(value, output)
                 is JSONArray -> encodeArray(value, output)
                 is JSONByte -> encodeByte(value, output)
@@ -73,6 +76,10 @@ class JSONBinaryEncoder {
                 is JSONString -> encodeString(value, output)
                 is JSONBoolean -> encodeBoolean(value, output)
             }
+        }
+
+        private fun encodeNull(jsonNull: JSONNull, output: OutputStream) {
+            output.write(14)
         }
 
         private fun encodeByte(jsonByte: JSONByte, output: OutputStream) {

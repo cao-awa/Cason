@@ -23,7 +23,7 @@ object JSONWriter {
         return builder.toString()
     }
 
-    fun writeValue(builder: StringBuilder, element: JSONElement, pretty: Boolean, indent: String, depth: Int) {
+    fun writeValue(builder: StringBuilder, element: JSONElement?, pretty: Boolean, indent: String, depth: Int) {
         when (element) {
             is JSONNull -> builder.append("null")
             is JSONBoolean -> {
@@ -37,6 +37,7 @@ object JSONWriter {
             is JSONNumber -> builder.append(element.toString())
             is JSONArray -> writeArray(builder, element, pretty, indent, depth)
             is JSONObject -> writeObject(builder, element, pretty, indent, depth)
+            null -> builder.append("null")
         }
     }
 

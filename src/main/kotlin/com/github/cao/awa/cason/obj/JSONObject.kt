@@ -165,6 +165,19 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      * Put a [JSONNumber] value at [key].
      *
      * @param key the key to insert the number at
+     * @param value the [JSONNull] value to insert
+     * @return this JSONNull for chaining
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
+    fun put(key: String, value: JSONNull?): JSONObject = putElement(key, value)
+
+    /**
+     * Put a [JSONNumber] value at [key].
+     *
+     * @param key the key to insert the number at
      * @param value the [JSONNumber] value to insert
      * @return this JSONNumber for chaining
      *
@@ -335,6 +348,18 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
         }
         return this
     }
+
+    /**
+     * Register a pending JSONNull under the receiver key.
+     *
+     * @param value the JSONNumber value to insert
+     * @return a [DataStream] which will commit the value when finalized
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
+    infix fun String.set(value: JSONNull?): DataStream<JSONNull?> = pendingData(value) { put(this, null) }
 
     /**
      * Register a pending JSONNumber under the receiver key.
@@ -618,8 +643,8 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      * @param value the JSONElement to insert
      * @return this JSONObject
      */
-    fun putElement(key: String, value: JSONElement): JSONObject {
-        this.map[key] = value
+    fun putElement(key: String, value: JSONElement?): JSONObject {
+        this.map[key] = value ?: JSONNull
         return this
     }
 
@@ -633,7 +658,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     fun getArray(key: String): JSONArray? = getElement(key) as? JSONArray
 
     /**
-     * Use an array value if it not null.
+     * Use an array value if it is not null.
      *
      * @author cao_awa
      *
@@ -656,7 +681,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     fun getJSON(key: String): JSONObject? = getElement(key) as? JSONObject
 
     /**
-     * Use a JSON object value if it not null.
+     * Use a JSON object value if it is not null.
      *
      * @author cao_awa
      *
@@ -679,7 +704,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     fun getString(key: String): String? = (getElement(key) as? JSONString)?.asString()
 
     /**
-     * Use a string value if it not null.
+     * Use a string value if it is not null.
      *
      * @author cao_awa
      *
@@ -702,7 +727,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     fun getBoolean(key: String): Boolean? = (getElement(key) as? JSONBoolean)?.value
 
     /**
-     * Use a boolean value if it not null.
+     * Use a boolean value if it is not null.
      *
      * @author cao_awa
      *
@@ -734,7 +759,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     fun getDouble(key: String): Double? = (getElement(key) as? JSONNumber)?.asDouble()
 
     /**
-     * Use a big decimal number value if it not null.
+     * Use a big decimal number value if it is not null.
      *
      * @author cao_awa
      *
@@ -748,7 +773,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     }
 
     /**
-     * Use a byte value if it not null.
+     * Use a byte value if it is not null.
      *
      * @author cao_awa
      *
@@ -762,7 +787,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     }
 
     /**
-     * Use a short value if it not null.
+     * Use a short value if it is not null.
      *
      * @author cao_awa
      *
@@ -776,7 +801,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     }
 
     /**
-     * Use an integer value if it not null.
+     * Use an integer value if it is not null.
      *
      * @author cao_awa
      *
@@ -790,7 +815,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     }
 
     /**
-     * Use a long value if it not null.
+     * Use a long value if it is not null.
      *
      * @author cao_awa
      *
@@ -804,7 +829,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     }
 
     /**
-     * Use a float value if it not null.
+     * Use a float value if it is not null.
      *
      * @author cao_awa
      *
@@ -818,7 +843,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     }
 
     /**
-     * Use a double value if it not null.
+     * Use a double value if it is not null.
      *
      * @author cao_awa
      *
