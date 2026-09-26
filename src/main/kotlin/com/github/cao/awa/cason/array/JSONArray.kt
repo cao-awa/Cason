@@ -10,15 +10,16 @@ import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
 import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
+import java.util.LinkedList
 
-data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
-    constructor() : this(ArrayList())
+data class JSONArray(val list: MutableList<JSONElement>) : JSONElement {
+    constructor() : this(LinkedList())
 
-    constructor(body: JSONArray.() -> Unit) : this(ArrayList<JSONElement>()) {
+    constructor(body: JSONArray.() -> Unit) : this(LinkedList<JSONElement>()) {
         body(this)
     }
 
-    fun add(): JSONArray = add(JSONNull)
+    fun addNull(): JSONArray = add(JSONNull)
 
     fun add(value: JSONObject): JSONArray {
         this.list.add(value)
@@ -153,7 +154,7 @@ data class JSONArray(val list: ArrayList<JSONElement>) : JSONElement {
         val builder = StringBuilder()
         builder.append('[')
         if (this.list.isEmpty()) {
-            builder.append(']');
+            builder.append(']')
             return builder.toString()
         }
 

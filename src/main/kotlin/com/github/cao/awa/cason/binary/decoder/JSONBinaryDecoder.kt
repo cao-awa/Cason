@@ -1,4 +1,4 @@
-package com.github.cao.awa.cason.binary
+package com.github.cao.awa.cason.binary.decoder
 
 import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
@@ -19,14 +19,12 @@ import com.github.cao.awa.cason.primary.number.infinity.JSONNegativeInfinity
 import com.github.cao.awa.cason.primary.number.infinity.JSONPositiveInfinity
 import com.github.cao.awa.cason.primary.number.nan.JSONNaN
 import com.github.cao.awa.cason.util.math.Base256
-import com.github.cao.awa.cason.util.math.SkippedBase256
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import kotlin.reflect.KClass
 
 class JSONBinaryDecoder {
     companion object {

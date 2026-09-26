@@ -100,7 +100,7 @@ object JSONDecoder {
 
                 // Normal field.
                 else -> {
-                    JSONCodec.getAdapter(data, jsonName, parameter.type)
+                    JSONCodec.decode(data, jsonName, parameter.type)
                 }
             }
 

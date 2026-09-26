@@ -14,11 +14,11 @@ import kotlin.reflect.jvm.jvmErasure
 
 @Suppress("unused")
 object JSONEncoder {
-    inline fun <reified T : Any> encode(data: T): JSONObject {
-        return encodeAny(data, T::class)
+    inline fun <reified T : Any> encodeData(data: T): JSONObject {
+        return encodeData(data, T::class)
     }
 
-    fun encodeAny(data: Any, inputType: KClass<*>): JSONObject {
+    fun encodeData(data: Any, inputType: KClass<*>): JSONObject {
         val type = if (inputType == Any::class) {
             data::class
         } else {
@@ -57,29 +57,23 @@ object JSONEncoder {
                 }
 
                 if (!value::class.isData) {
-                    JSONCodec.setAdapter(jsonName, value, this)
+                    JSONCodec.encode(jsonName, value, this)
                 } else {
                     when {
                         nested != null -> {
-                            val encoded = encodeAny(value, property.returnType.jvmErasure)
+                            val encoded = encodeData(value, property.returnType.jvmErasure)
                             jsonName set encoded
                         }
 
                         flattened != null -> {
-                            val encoded = encodeAny(value, property.returnType.jvmErasure)
+                            val encoded = encodeData(value, property.returnType.jvmErasure)
                             encoded.forEach { (k, v) ->
-                                JSONCodec.setAdapter(k, v, this)
+                                JSONCodec.encode(k, v, this)
                             }
                         }
 
-                        property.returnType.jvmErasure.isData -> {
-                            error(
-                                "Cannot encode property '${type.simpleName}.${property.name}' because data class properties must be annotated with @Nested or @Flattened"
-                            )
-                        }
-
                         else -> {
-                            JSONCodec.setAdapter(jsonName, value, this)
+                            JSONCodec.encode(jsonName, value, this)
                         }
                     }
                 }
@@ -89,7 +83,7 @@ object JSONEncoder {
 
 
     inline fun <reified T : Any> encodeToString(data: T): String {
-        return encode(data).toString()
+        return encodeData(data).toString()
     }
 
     fun renderJSON(data: JSONObject): String {

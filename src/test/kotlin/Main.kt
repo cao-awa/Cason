@@ -1,9 +1,9 @@
 import com.alibaba.fastjson2.JSON
 import com.github.cao.awa.cason.annotation.Field
 import com.github.cao.awa.cason.annotation.Nested
-import com.github.cao.awa.cason.binary.JSONBinaryDecoder
-import com.github.cao.awa.cason.binary.JSONBinaryEncoder
-import com.github.cao.awa.cason.codec.decoder.JSONDecoder
+import com.github.cao.awa.cason.binary.decoder.JSONBinaryDecoder
+import com.github.cao.awa.cason.binary.encoder.JSONBinaryEncoder
+import com.github.cao.awa.cason.codec.encoder.JSONEncoder
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
 import com.github.cao.awa.cason.serialize.JSONSerializeVersion
@@ -11,7 +11,6 @@ import com.github.cao.awa.cason.serialize.parser.StrictJSONParser
 import com.github.cao.awa.cason.setting.JSONSettings
 import com.github.cao.awa.cason.serialize.writer.JSONWriter
 import java.io.File
-import java.nio.charset.StandardCharsets
 
 fun main() {
 //    JSONParser.parse("""
@@ -39,7 +38,16 @@ fun main() {
 //    """.trimIndent()).also {
 //        println(it.toString())
 //    }
-    binary()
+//    binary()
+    val pieces = mutableMapOf< String, Long>().apply {
+        this["1"] = 1
+        this["2"] = 2
+        this["3"] = 3
+    }
+
+    val json = JSONEncoder.encodeData(TestInstance(1L, pieces))
+    println(json)
+    println(JSONBinaryEncoder.encode(json).size)
 }
 
 fun binary() {

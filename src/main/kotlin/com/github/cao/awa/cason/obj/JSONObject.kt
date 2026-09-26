@@ -330,6 +330,20 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      */
     fun put(key: String, value: Double): JSONObject = putElement(key, JSONNumber.ofDouble(value))
 
+
+    /**
+     * Put a JSONElement value at [key].
+     *
+     * @param key the key to insert the JSONElement at
+     * @param value the JSONElement value to insert
+     * @return this JSONObject for chaining
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
+    fun put(key: String, value: JSONElement): JSONObject = putElement(key, value)
+
     /**
      * Encode an arbitrary Kotlin object [value] to a [JSONElement] and put it at
      * [key]. Returns this JSONObject for chaining.
@@ -343,7 +357,7 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      * @since 1.0.11
      */
     inline fun <reified T: Any> putNested(key: String, value: T): JSONObject {
-        JSONEncoder.encode(value).also {
+        JSONEncoder.encodeData(value).also {
             put(key, it)
         }
         return this
@@ -504,6 +518,18 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
      * @since 1.0.0
      */
     infix fun String.set(value: Double): DataStream<Double> = pendingData(value) { put(this, it) }
+
+    /**
+     * Register a pending JSONElement under the receiver key.
+     *
+     * @param value the JSONElement value to insert
+     * @return a [DataStream] which will commit the value when finalized
+     *
+     * @author cao_awa
+     *
+     * @since 1.0.0
+     */
+    infix fun String.set(value: JSONElement): DataStream<JSONElement> = pendingData(value) { put(this, it) }
 
     /**
      * Register a pending encoded nested value under the string receiver.
@@ -741,24 +767,6 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
     }
 
     /**
-     * Numeric getters that attempt to coerce to the target type or return null.
-     *
-     * Each method returns null when the stored value is missing or not a number.
-     *
-     * @param key the key to look up the numeric value
-     * @return the coerced numeric value or null
-     *
-     * @since 1.0.0
-     */
-    fun getNumber(key: String): BigDecimal? = (getElement(key) as? JSONNumber)?.asBigDecimal()
-    fun getByte(key: String): Byte? = (getElement(key) as? JSONNumber)?.asByte()
-    fun getShort(key: String): Short? = (getElement(key) as? JSONNumber)?.asShort()
-    fun getInt(key: String): Int? = (getElement(key) as? JSONNumber)?.asInt()
-    fun getLong(key: String): Long? = (getElement(key) as? JSONNumber)?.asLong()
-    fun getFloat(key: String): Float? = (getElement(key) as? JSONNumber)?.asFloat()
-    fun getDouble(key: String): Double? = (getElement(key) as? JSONNumber)?.asDouble()
-
-    /**
      * Use a big decimal number value if it is not null.
      *
      * @author cao_awa
@@ -855,6 +863,32 @@ class JSONObject(private val map: HashMap<String, JSONElement>) : JSONElement {
             user(num)
         }
     }
+
+    fun ifNull(key: String, user: () -> Unit) {
+        if (getElement(key) == JSONNull) {
+            user()
+        }
+    }
+
+
+    /**
+     * Numeric getters that attempt to coerce to the target type or return null.
+     *
+     * Each method returns null when the stored value is missing or not a number.
+     *
+     * @param key the key to look up the numeric value
+     * @return the coerced numeric value or null
+     *
+     * @since 1.0.0
+     */
+    fun getNumber(key: String): BigDecimal? = (getElement(key) as? JSONNumber)?.asBigDecimal()
+    fun getByte(key: String): Byte? = (getElement(key) as? JSONNumber)?.asByte()
+    fun getShort(key: String): Short? = (getElement(key) as? JSONNumber)?.asShort()
+    fun getInt(key: String): Int? = (getElement(key) as? JSONNumber)?.asInt()
+    fun getLong(key: String): Long? = (getElement(key) as? JSONNumber)?.asLong()
+    fun getFloat(key: String): Float? = (getElement(key) as? JSONNumber)?.asFloat()
+    fun getDouble(key: String): Double? = (getElement(key) as? JSONNumber)?.asDouble()
+    fun get(key: String): JSONElement = getElement(key)
 
     /**
      * Decode a nested Kotlin object of type [T] from the JSON object stored

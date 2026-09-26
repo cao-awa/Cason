@@ -1,36 +1,23 @@
 package com.github.cao.awa.cason.codec
 
+import com.github.cao.awa.cason.JSONElement
 import com.github.cao.awa.cason.array.JSONArray
 import com.github.cao.awa.cason.codec.decoder.JSONDecoder
 import com.github.cao.awa.cason.codec.encoder.JSONEncoder
 import com.github.cao.awa.cason.obj.JSONObject
+import com.github.cao.awa.cason.primary.JSONBoolean
+import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
+import com.github.cao.awa.cason.primary.number.JSONByte
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.jvmErasure
 
 @Suppress("unused")
 object JSONCodec {
-    inline fun <reified T> decode(data: String): T {
-        return JSONDecoder.decode(data)
-    }
-
-    inline fun <reified T> decode(data: JSONObject): T {
-        return JSONDecoder.decode(data)
-    }
-
-    inline fun <reified T: Any> encode(data: T): JSONObject {
-        return JSONEncoder.encode<T>(data)
-    }
-
-    fun encodeAny(data: Any): JSONObject {
-        return JSONEncoder.encodeAny(data, data::class)
-    }
-
     fun renderJSON(data: JSONObject): String {
         return JSONEncoder.renderJSON(data)
     }
-
 
     fun renderJSON(data: JSONObject, pretty: Boolean = false): String {
         return JSONEncoder.renderJSON(data, pretty)
@@ -44,38 +31,67 @@ object JSONCodec {
         return data.toString(pretty, "    ", 0)
     }
 
-    fun setAdapter(name: String, data: Any?, json: JSONObject) {
+    fun encode(data: Any?): JSONElement {
         if (data == null) {
-            json.putNull(name)
-            return
+            return JSONNull
         }
-        json.apply {
-            when (data) {
-                is String -> name set data
-                is Int -> name set data
-                is Long -> name set data
-                is Float -> name set data
-                is Double -> name set data
-                is Boolean -> name set data
-                is Byte -> name set data
-                is JSONObject -> name set data
-                is JSONArray -> name set data
-                is JSONNumber -> name set data
-                is JSONString -> name set data
-                else -> {
-                    if (data::class.isData) {
-                        setAdapter(
-                            name,
-                            JSONEncoder.encodeAny(data, data::class),
-                            json
-                        )
+        return when (data) {
+            is String -> JSONString(data)
+            is Int -> JSONNumber.ofInt(data)
+            is Long -> JSONNumber.ofLong(data)
+            is Float -> JSONNumber.ofFloat(data)
+            is Double -> JSONNumber.ofDouble(data)
+            is Boolean -> JSONBoolean.of(data)
+            is Byte -> JSONByte(data)
+            is JSONObject -> data
+            is JSONArray -> data
+            is JSONNumber -> data
+            is JSONString -> data
+            is Iterable<*> -> {
+                val array = JSONArray {
+                    for (element in data) {
+                        if (element != null) {
+                            add(encode(element))
+                        } else {
+                            addNull()
+                        }
                     }
+                }
+                array
+            }
+
+            is Map<*, *> -> {
+                val obj = JSONObject {
+                    for ((key, value) in data) {
+                        if (value != null) {
+                            put(key.toString(), encode(value))
+                        }
+                    }
+                }
+                obj
+            }
+
+            else -> {
+                if (data::class.isData) {
+                    JSONEncoder.encodeData(data, data::class)
+                } else {
+                    throw IllegalArgumentException("Unsupported data type: ${data::class}")
                 }
             }
         }
     }
 
-    fun getAdapter(data: JSONObject, key: String, type: KType): Any? {
+    fun encode(name: String, data: Any?, json: JSONObject) {
+        if (data == null) {
+            json.putNull(name)
+            return
+        }
+        json.apply {
+            name set encode(data)
+        }
+    }
+
+    fun decode(data: JSONObject, key: String, type: KType): Any? {
         if (type.jvmErasure == String::class) {
             return data.getString(key)
         }
