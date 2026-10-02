@@ -113,6 +113,20 @@ object JSONCodec {
         if (type.jvmErasure == Byte::class) {
             return data.getByte(key)
         }
+        if (data.get(key) is JSONArray){
+            return mutableListOf<Any>().also { list ->
+                data.getArray(key)?.forEach {
+                    list.add(it)
+                }
+            }
+        }
+        if (data.get(key) is JSONObject){
+            return mutableMapOf<String, Any>().also { map ->
+                data.getJSON(key)?.forEach { key, element ->
+                    map[key] = element
+                }
+            }
+        }
         return JSONDecoder.decode(data, type.jvmErasure)
     }
 }

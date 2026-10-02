@@ -3,6 +3,8 @@ import com.github.cao.awa.cason.annotation.Field
 import com.github.cao.awa.cason.annotation.Nested
 import com.github.cao.awa.cason.binary.decoder.JSONBinaryDecoder
 import com.github.cao.awa.cason.binary.encoder.JSONBinaryEncoder
+import com.github.cao.awa.cason.codec.JSONCodec
+import com.github.cao.awa.cason.codec.decoder.JSONDecoder
 import com.github.cao.awa.cason.codec.encoder.JSONEncoder
 import com.github.cao.awa.cason.obj.JSONObject
 import com.github.cao.awa.cason.serialize.parser.JSONParser
@@ -45,9 +47,9 @@ fun main() {
         this["3"] = 3
     }
 
-    val json = JSONEncoder.encodeData(TestInstance(1L, pieces))
+    val json = JSONCodec.encode(TestInstance(1L, pieces)) as JSONObject
     println(json)
-    println(JSONBinaryEncoder.encode(json).size)
+    println(JSONDecoder.decodeDataClass(json, TestInstance::class).piece)
 }
 
 fun binary() {

@@ -32,7 +32,7 @@ object JSONDecoder {
         throw IllegalStateException("Cannot decode '${type.qualifiedName}' from JSON because it is not a data class")
     }
 
-    fun decodeDataClass(data: JSONObject, type: KClass<*>): Any {
+    fun <T : Any> decodeDataClass(data: JSONObject, type: KClass<T>): T {
         val parameters: MutableMap<KParameter, Any?> = mutableMapOf()
 
         val constructor = type.primaryConstructor ?: error("Data class '${type.qualifiedName}' must have a primary constructor")
