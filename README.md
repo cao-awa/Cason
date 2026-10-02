@@ -136,7 +136,7 @@ repositories {
 
 ```kotlin
 dependencies {
-    implementation("com.github.cao.awa:cason:{CASON_VERSION}")
+    implementation("com.github.cao-awa:cason:{CASON_VERSION}")
 }
 ```
 
@@ -144,9 +144,11 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'com.github.cao.awa:cason:{CASON_VERSION}'
+    implementation 'com.github.cao-awa:cason:{CASON_VERSION}'
 }
 ```
+
+For the versions, see [JitPack](https://jitpack.io/#cao-awa/Cason).
 
 # Quick Start
 
