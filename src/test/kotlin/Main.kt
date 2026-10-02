@@ -41,15 +41,15 @@ fun main() {
 //        println(it.toString())
 //    }
 //    binary()
-    val pieces = mutableMapOf< String, Long>().apply {
-        this["1"] = 1
-        this["2"] = 2
-        this["3"] = 3
+    val pieces = mutableListOf<Long>().apply {
+        add(1)
+        add(2)
+        add(3)
     }
 
     val json = JSONCodec.encode(TestInstance(1L, pieces)) as JSONObject
     println(json)
-    println(JSONDecoder.decodeDataClass(json, TestInstance::class).piece)
+    println(JSONDecoder.decodeDataClass(json, TestInstance::class).piece.contains(2))
 }
 
 fun binary() {

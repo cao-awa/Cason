@@ -9,7 +9,13 @@ import com.github.cao.awa.cason.primary.JSONBoolean
 import com.github.cao.awa.cason.primary.JSONNull
 import com.github.cao.awa.cason.primary.JSONNumber
 import com.github.cao.awa.cason.primary.JSONString
+import com.github.cao.awa.cason.primary.number.JSONBigDecimal
 import com.github.cao.awa.cason.primary.number.JSONByte
+import com.github.cao.awa.cason.primary.number.JSONDouble
+import com.github.cao.awa.cason.primary.number.JSONFloat
+import com.github.cao.awa.cason.primary.number.JSONInt
+import com.github.cao.awa.cason.primary.number.JSONLong
+import com.github.cao.awa.cason.primary.number.JSONShort
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.jvmErasure
 
@@ -114,19 +120,45 @@ object JSONCodec {
             return data.getByte(key)
         }
         if (data.get(key) is JSONArray){
-            return mutableListOf<Any>().also { list ->
-                data.getArray(key)?.forEach {
-                    list.add(it)
-                }
-            }
+            return handlePrimary(data.getArray(key))
         }
         if (data.get(key) is JSONObject){
-            return mutableMapOf<String, Any>().also { map ->
-                data.getJSON(key)?.forEach { key, element ->
-                    map[key] = element
-                }
-            }
+            return handlePrimary(data.getJSON(key))
         }
         return JSONDecoder.decode(data, type.jvmErasure)
+    }
+
+    fun handlePrimary(value: Any?): Any? {
+        return when (value) {
+            is JSONNull -> null
+            is JSONString -> value.toString()
+            is JSONNumber -> {
+                when (value) {
+                    is JSONByte -> value.value
+                    is JSONShort -> value.value
+                    is JSONInt -> value.value
+                    is JSONLong -> value.value
+                    is JSONFloat -> value.value
+                    is JSONDouble -> value.value
+                    is JSONBigDecimal -> value.value
+                    else -> null
+                }
+            }
+            is JSONArray -> {
+                mutableListOf<Any?>().also { list ->
+                    value.forEach {
+                        list.add(handlePrimary(it))
+                    }
+                }
+            }
+            is JSONObject -> {
+                mutableMapOf<String, Any?>().also { map ->
+                    value.forEach { key, element ->
+                        map[key] = handlePrimary(element)
+                    }
+                }
+            }
+            else -> null
+        }
     }
 }
