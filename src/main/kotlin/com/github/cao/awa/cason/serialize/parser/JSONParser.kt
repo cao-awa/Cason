@@ -384,102 +384,111 @@ open class JSONParser {
         this.col = col
     }
 
-    protected open fun parseString(chars: CharArray): String {
-        ensureAvailable()
-
+    open fun parseString(chars: CharArray): String {
         val start = this.index
-        val end = this.end
-        var index = start
-
-        val quote = chars[index++]
-        this.col++
-
-        // Fast path: only look for quote or backslash.
-        while (true) {
-            if (index < end) {
-                val currentChar = chars[index]
-                if (currentChar == quote) {
-                    this.index = index + 1
-                    this.col += (index - start) + 1
-                    return String(chars, start + 1, index - start - 1)
-                }
-                if (currentChar == '\\') {
-                    break
-                }
-                index++
-                continue
-            }
-            if (this.isFinal) {
-                error("Unterminated string")
-            }
-            throw NeedMoreInputException(this.index, this.line, this.col)
+        if (start >= this.end) {
+            throw JSONParseException("Unexpected EOF in string, at line $line, column $col")
         }
 
-        // Slow path: escape or invalid content exists.
-        val builder = StringBuilder((index - start) + 16)
-        builder.appendRange(chars, start, index)
+        val quote = chars[start]
+        if (quote != '"' && quote != '\'') {
+            throw JSONParseException("Expected a quote to start a string but got '$quote', at line $line, column $col")
+        }
 
-        // Commit reader to first backslash.
-        this.col += (index - start)
+        val end = this.end
+        var index = start + 1
+
+        // Fast path: the common case is a string with no escapes at all, which can be
+        // sliced straight out of the buffer.
+        while (index < end) {
+            val current = chars[index]
+            if (current == quote) {
+                this.col += (index - start) + 1
+                this.index = index + 1
+                return String(chars, start + 1, index - start - 1)
+            }
+            if (current == '\\') {
+                break
+            }
+            if (current < ' ') {
+                throw JSONParseException("Unescaped control character in string, at line $line, column $col")
+            }
+            index++
+        }
+
+        if (index >= end) {
+            throw JSONParseException("Unterminated string, at line $line, column $col")
+        }
+
+        // Slow path: an escape was found. Everything before it is copied verbatim, and the
+        // copy deliberately begins after the opening quote.
+        val builder = StringBuilder(end - start)
+        builder.appendRange(chars, start + 1, index)
+        this.col += index - start
         this.index = index
-
-        var col = this.col
 
         while (true) {
             if (index >= end) {
-                if (this.isFinal) {
-                    error("Unterminated string")
-                }
-                throw NeedMoreInputException(this.index, this.line, this.col)
+                throw JSONParseException("Unterminated string, at line $line, column $col")
             }
 
-            val c = chars[index++]
-            col++
+            val current = chars[index++]
 
-            when (c) {
-                quote -> {
+            when {
+                current == quote -> {
+                    this.col += index - start
                     this.index = index
-                    this.col = col
                     return builder.toString()
                 }
 
-                '\\' -> {
+                current == '\\' -> {
                     if (index >= end) {
-                        if (this.isFinal) {
-                            error("Unterminated escape in string")
-                        }
-                        throw NeedMoreInputException(this.index, this.line, this.col)
+                        throw JSONParseException("Unterminated escape in string, at line $line, column $col")
                     }
-                    val esc = chars[index++]
-                    col++
-                    builder.append(
-                        when (esc) {
-                            'n' -> '\n'
-                            'r' -> '\r'
-                            't' -> '\t'
-                            'b' -> '\b'
-                            'f' -> '\u000C'
-                            '"' -> '"'
-                            '\'' -> '\''
-                            '\\' -> '\\'
-                            else -> error("Unknown escape \\$esc")
+
+                    when (val escaped = chars[index++]) {
+                        '"' -> builder.append('"')
+                        '\'' -> builder.append('\'')
+                        '\\' -> builder.append('\\')
+                        '/' -> builder.append('/')
+                        'b' -> builder.append('\b')
+                        'f' -> builder.append('\u000C')
+                        'n' -> builder.append('\n')
+                        'r' -> builder.append('\r')
+                        't' -> builder.append('\t')
+                        'u' -> {
+                            if (index + 4 > end) {
+                                throw JSONParseException("Truncated unicode escape in string, at line $line, column $col")
+                            }
+                            var code = 0
+                            for (offset in 0 until 4) {
+                                val digit = Character.digit(chars[index + offset], 16)
+                                if (digit < 0) {
+                                    throw JSONParseException(
+                                        "Malformed unicode escape in string, at line $line, column $col"
+                                    )
+                                }
+                                code = code * 16 + digit
+                            }
+                            index += 4
+                            // A surrogate pair arrives as two consecutive escapes and is
+                            // rebuilt by appending both halves.
+                            builder.append(code.toChar())
                         }
-                    )
+
+                        else -> throw JSONParseException(
+                            "Unknown escape \\$escaped, at line $line, column $col"
+                        )
+                    }
                 }
 
-                // Line terminators are illegal unless escaped
-                '\n', '\u2028', '\u2029' ->
-                    error("Unescaped line terminator in string")
+                // A raw line break inside a string would make the payload ambiguous, and
+                // other control characters are not legal unescaped in JSON.
+                current < ' ' -> throw JSONParseException(
+                    "Unescaped control character in string, at line $line, column $col"
+                )
 
-                '\r' -> {
-                    // If CR is last char in buffer and streaming, might be CRLF split
-                    if (index >= end && !this.isFinal) {
-                        throw NeedMoreInputException(this.index, this.line, this.col)
-                    }
-                    error("Unescaped line terminator in string")
-                }
-
-                else -> builder.append(c)
+                else -> builder.append(current)
             }
         }
     }
